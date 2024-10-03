@@ -1,5 +1,6 @@
 package com.example.finance
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -10,16 +11,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 
 
 @Composable
@@ -36,34 +39,61 @@ fun CategoriesScreen() {
         )
     }
 
-    val openDialog = remember { mutableStateOf(false) }
+    var openAddCategoryDialog by remember { mutableStateOf(false) }
+    var openAddAmountDialog by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+
+    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         CategoriesGrid(
             categories = categories,
             onAddCategoryClick = {
-                openDialog.value = true
+                openAddCategoryDialog = true
+            },
+            onCategoryClick = { category ->
+                selectedCategory = category
+                openAddAmountDialog = true
             }
         )
 
-        if (openDialog.value) {
+        if (openAddCategoryDialog) {
             AddCategoryDialog(
-                onDismissRequest = { openDialog.value = false },
+                onDismissRequest = { openAddCategoryDialog = false },
                 onConfirm = { newCategory ->
                     categories.add(newCategory)
-                    openDialog.value = false
+                    openAddCategoryDialog = false
+                }
+            )
+        }
+
+        if (openAddAmountDialog && selectedCategory != null) {
+            AddAmountDialog(
+                categories = categories,
+                initialCategory = selectedCategory!!,
+                onDismissRequest = { openAddAmountDialog = false },
+                onConfirm = { category, amount ->
+                    openAddAmountDialog = false
+                    // заглушка, пока я не сделал бд
+                    Toast.makeText(
+                        context,
+                        "Категория: ${category.name}, Сумма: $amount",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             )
         }
     }
 }
 
+
 @Composable
 fun CategoriesGrid(
     categories: List<Category>,
-    onAddCategoryClick: () -> Unit
+    onAddCategoryClick: () -> Unit,
+    onCategoryClick: (Category) -> Unit
 ) {
-    val columns = 2 // количество колонок в сетке
+    val columns = 2
 
     val items = categories + Category("Добавить", Icons.Default.Add)
 
@@ -80,13 +110,139 @@ fun CategoriesGrid(
                     if (category.name == "Добавить") {
                         onAddCategoryClick()
                     } else {
-                        // Обработка нажатия на категорию (если требуется)
+                        onCategoryClick(category)
                     }
                 }
             )
         }
     }
 }
+
+@Composable
+fun AddAmountDialog(
+    categories: List<Category>,
+    initialCategory: Category,
+    onDismissRequest: () -> Unit,
+    onConfirm: (Category, Double) -> Unit
+) {
+    var selectedCategory by remember { mutableStateOf(initialCategory) }
+    var amountText by remember { mutableStateOf("") }
+    var amountError by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Добавить запись",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Выбор категории
+                CategoryDropdown(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { selectedCategory = it }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Ввод суммы
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = {
+                        amountText = it
+                        amountError = false
+                    },
+                    label = { Text("Сумма") },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = amountError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                if (amountError) {
+                    Text(
+                        text = "Введите не нулевое значение",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismissRequest) {
+                        Text("Отмена")
+                    }
+                    TextButton(
+                        onClick = {
+                            val amount = amountText.toDoubleOrNull()
+                            if (amount == null || amount == 0.0) {
+                                amountError = true
+                            } else {
+                                onConfirm(selectedCategory, amount)
+                            }
+                        },
+                        enabled = amountText.isNotBlank()
+                    ) {
+                        Text("Добавить")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryDropdown(
+    categories: List<Category>,
+    selectedCategory: Category,
+    onCategorySelected: (Category) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = selectedCategory.name,
+        onValueChange = {},
+        label = { Text("Категория") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = true },
+        readOnly = true,
+        trailingIcon = {
+            Icon(
+                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                contentDescription = null
+            )
+        }
+    )
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        categories.forEach { category ->
+            DropdownMenuItem(
+                text = { Text(category.name) },
+                onClick = {
+                    onCategorySelected(category)
+                    expanded = false
+                }
+            )
+        }
+    }
+}
+
 
 @Composable
 fun CategoryItem(

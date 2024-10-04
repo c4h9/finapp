@@ -13,7 +13,7 @@
         android:theme="@style/Theme.Finance"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".presentation.ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Finance">
             <intent-filter>
@@ -24,7 +24,7 @@
         </activity>
 
         <service
-            android:name=".NotificationService"
+            android:name=".data.service.NotificationService"
             android:exported="false"
             android:label="@string/service_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

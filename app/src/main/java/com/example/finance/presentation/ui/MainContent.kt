@@ -21,11 +21,6 @@ fun MainContent(viewModel: MainViewModel) {
     val notificationTextValue = viewModel.notificationText.collectAsState().value
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Finance Notification Listener") }
-            )
-        },
         bottomBar = {
             BottomNavigationBar(navController = navController)
         },

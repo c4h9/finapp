@@ -9,13 +9,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.finance.Screen
 
+val navigationItems = listOf(
+    Screen.Categories,
+    Screen.Operations,
+    Screen.Settings
+)
+
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    val items = listOf(
-        Screen.Categories,
-        Screen.Operations,
-        Screen.Settings
-    )
+fun BottomNavigationBar(navController: NavHostController, items: List<Screen> = navigationItems) {
     val currentBackStackEntry = navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry.value?.destination
 

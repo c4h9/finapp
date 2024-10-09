@@ -1,4 +1,4 @@
-package com.example.finance
+package com.example.finance.domain.entity
 
 import androidx.compose.ui.graphics.vector.ImageVector
 

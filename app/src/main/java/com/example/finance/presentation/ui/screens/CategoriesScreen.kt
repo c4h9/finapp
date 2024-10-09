@@ -23,8 +23,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import com.example.finance.Category
-//import com.example.finance.domain.entity.Category
+import com.example.finance.domain.entity.Category
 
 @Composable
 fun CategoriesScreen() {

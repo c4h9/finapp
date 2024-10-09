@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.finance.presentation.viewmodel.MainViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(viewModel: MainViewModel) {
     val navController = rememberNavController()
@@ -28,6 +27,7 @@ fun MainContent(viewModel: MainViewModel) {
         Box(modifier = Modifier.padding(innerPadding)) {
             NavigationGraph(
                 navController = navController,
+                viewModel = viewModel,
                 notificationTextValue = notificationTextValue,
                 onGetNotificationAccess = {
                     viewModel.getNotificationAccessPermission()
@@ -36,3 +36,4 @@ fun MainContent(viewModel: MainViewModel) {
         }
     }
 }
+

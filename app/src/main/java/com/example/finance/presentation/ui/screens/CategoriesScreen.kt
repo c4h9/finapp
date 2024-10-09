@@ -24,9 +24,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import com.example.finance.domain.entity.Category
+import com.example.finance.presentation.viewmodel.MainViewModel
 
 @Composable
-fun CategoriesScreen() {
+fun CategoriesScreen(viewModel: MainViewModel) {
     val categories = remember {
         mutableStateListOf(
             Category("Еда", Icons.Default.Fastfood),
@@ -42,8 +43,6 @@ fun CategoriesScreen() {
     var openAddCategoryDialog by remember { mutableStateOf(false) }
     var openAddAmountDialog by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
-
-    val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         CategoriesGrid(
@@ -74,18 +73,12 @@ fun CategoriesScreen() {
                 onDismissRequest = { openAddAmountDialog = false },
                 onConfirm = { category, amount ->
                     openAddAmountDialog = false
-                    // заглушка, пока я не сделал бд
-                    Toast.makeText(
-                        context,
-                        "Категория: ${category.name}, Сумма: $amount",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    viewModel.addOperation(category.name, amount)
                 }
             )
         }
     }
 }
-
 
 @Composable
 fun CategoriesGrid(

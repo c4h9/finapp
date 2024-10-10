@@ -16,19 +16,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.TravelExplore
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -41,34 +30,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.finance.domain.entity.Category
+import com.example.finance.domain.entity.CategoryIconType
 import com.example.finance.presentation.viewmodel.MainViewModel
 
 @Composable
 fun CategoriesScreen(viewModel: MainViewModel) {
-    val categories = remember {
-        mutableStateListOf(
-            Category("Еда", Icons.Default.Fastfood),
-            Category("Транспорт", Icons.Default.DirectionsCar),
-            Category("Дом", Icons.Default.Home),
-            Category("Работа", Icons.Default.Work),
-            Category("Спорт", Icons.Default.FitnessCenter),
-            Category("Покупки", Icons.Default.ShoppingCart),
-            Category("Развлечения", Icons.Default.Movie),
-        )
-    }
+    val categories by viewModel.categories.collectAsState()
 
     var openAddCategoryDialog by remember { mutableStateOf(false) }
     var openAddAmountDialog by remember { mutableStateOf(false) }
@@ -90,7 +69,7 @@ fun CategoriesScreen(viewModel: MainViewModel) {
             AddCategoryDialog(
                 onDismissRequest = { openAddCategoryDialog = false },
                 onConfirm = { newCategory ->
-                    categories.add(newCategory)
+                    viewModel.addCategory(newCategory)
                     openAddCategoryDialog = false
                 }
             )
@@ -103,12 +82,13 @@ fun CategoriesScreen(viewModel: MainViewModel) {
                 onDismissRequest = { openAddAmountDialog = false },
                 onConfirm = { category, amount ->
                     openAddAmountDialog = false
-                    viewModel.addOperation(category.name, amount)
+                    viewModel.addOperation(category, amount)
                 }
             )
         }
     }
 }
+
 
 @Composable
 fun CategoriesGrid(
@@ -118,7 +98,7 @@ fun CategoriesGrid(
 ) {
     val columns = 4
 
-    val items = categories + Category("Добавить", Icons.Default.Add)
+    val items = categories + Category("Добавить", CategoryIconType.Add)
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -226,6 +206,7 @@ fun AddAmountDialog(
     }
 }
 
+
 @Composable
 fun CategoryDropdown(
     categories: List<Category>,
@@ -286,7 +267,7 @@ fun CategoryItem(
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = category.icon,
+                imageVector = category.iconType.icon,
                 contentDescription = category.name,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.primary
@@ -306,20 +287,9 @@ fun AddCategoryDialog(
     onConfirm: (Category) -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
-    var selectedIcon by remember { mutableStateOf(Icons.Default.Home) }
+    var selectedIconType by remember { mutableStateOf(CategoryIconType.Home) }
 
-    val iconOptions = listOf(
-        Icons.Default.Home,
-        Icons.Default.ShoppingCart,
-        Icons.Default.Fastfood,
-        Icons.Default.Work,
-        Icons.Default.DirectionsCar,
-        Icons.Default.FitnessCenter,
-        Icons.Default.Movie,
-        Icons.Default.School,
-        Icons.Default.Pets,
-        Icons.Default.TravelExplore
-    )
+    val iconOptions = CategoryIconType.values().toList()
 
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
@@ -355,8 +325,8 @@ fun AddCategoryDialog(
 
                 IconSelectionGrid(
                     icons = iconOptions,
-                    selectedIcon = selectedIcon,
-                    onIconSelected = { selectedIcon = it }
+                    selectedIcon = selectedIconType,
+                    onIconSelected = { selectedIconType = it }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -370,7 +340,7 @@ fun AddCategoryDialog(
                     }
                     TextButton(
                         onClick = {
-                            val newCategory = Category(categoryName, selectedIcon)
+                            val newCategory = Category(categoryName, selectedIconType)
                             onConfirm(newCategory)
                         },
                         enabled = categoryName.isNotBlank()
@@ -385,9 +355,9 @@ fun AddCategoryDialog(
 
 @Composable
 fun IconSelectionGrid(
-    icons: List<ImageVector>,
-    selectedIcon: ImageVector,
-    onIconSelected: (ImageVector) -> Unit
+    icons: List<CategoryIconType>,
+    selectedIcon: CategoryIconType,
+    onIconSelected: (CategoryIconType) -> Unit
 ) {
     val columns = 5
     val rows = if (icons.size % columns == 0) {
@@ -405,14 +375,14 @@ fun IconSelectionGrid(
                 for (column in 0 until columns) {
                     val index = row * columns + column
                     if (index < icons.size) {
-                        val icon = icons[index]
+                        val iconType = icons[index]
                         IconButton(
-                            onClick = { onIconSelected(icon) }
+                            onClick = { onIconSelected(iconType) }
                         ) {
                             Icon(
-                                imageVector = icon,
+                                imageVector = iconType.icon,
                                 contentDescription = null,
-                                tint = if (icon == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                tint = if (iconType == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     } else {

@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.finance.data.dao.OperationDao
-import com.example.finance.domain.entity.OperationEntity
+import com.example.finance.data.entity.OperationEntity
 
 @Database(entities = [OperationEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {

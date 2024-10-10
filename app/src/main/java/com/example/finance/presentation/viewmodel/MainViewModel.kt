@@ -4,9 +4,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance.NotificationInfo
 import com.example.finance.data.database.AppDatabase
+import com.example.finance.data.entity.OperationEntity
 import com.example.finance.data.repository.NotificationRepositoryImpl
 import com.example.finance.data.repository.OperationRepositoryImpl
-import com.example.finance.domain.entity.OperationEntity
+import com.example.finance.domain.entity.Category
+import com.example.finance.domain.entity.CategoryIconType
 import com.example.finance.domain.repository.NotificationListener
 import com.example.finance.domain.repository.NotificationRepository
 import com.example.finance.domain.repository.OperationRepository
@@ -23,6 +25,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _notificationText = MutableStateFlow("")
     val notificationText = _notificationText.asStateFlow()
 
+    private val _categories = MutableStateFlow<List<Category>>(initialCategories())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
+
     private val _operations = MutableStateFlow<List<OperationEntity>>(emptyList())
     val operations: StateFlow<List<OperationEntity>> = _operations.asStateFlow()
 
@@ -38,6 +43,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
+    private fun initialCategories(): List<Category> {
+        return listOf(
+            Category("Еда", CategoryIconType.Fastfood),
+            Category("Транспорт", CategoryIconType.DirectionsCar),
+            Category("Дом", CategoryIconType.Home),
+            Category("Работа", CategoryIconType.Work),
+            Category("Спорт", CategoryIconType.FitnessCenter),
+            Category("Покупки", CategoryIconType.ShoppingCart),
+            Category("Развлечения", CategoryIconType.Movie)
+        )
+    }
+
+    fun addCategory(category: Category) {
+        _categories.value = _categories.value + category
+    }
+
     fun getNotificationAccessPermission() {
         notificationRepository.getNotificationAccessPermission()
     }
@@ -50,14 +71,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         notificationRepository.removeNotificationListener()
     }
 
-    fun addOperation(categoryName: String, amount: Double) {
+    fun addOperation(category: Category, amount: Double) {
         viewModelScope.launch {
             val operation = OperationEntity(
-                categoryName = categoryName,
+                categoryName = category.name,
+                iconName = category.iconType.name,
                 amount = amount
             )
-            val id = operationRepository.insertOperation(operation)
-
+            operationRepository.insertOperation(operation)
         }
     }
 

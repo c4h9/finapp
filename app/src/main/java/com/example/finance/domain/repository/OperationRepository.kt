@@ -1,6 +1,6 @@
 package com.example.finance.domain.repository
 
-import com.example.finance.domain.entity.OperationEntity
+import com.example.finance.data.entity.OperationEntity
 import kotlinx.coroutines.flow.Flow
 
 interface OperationRepository {

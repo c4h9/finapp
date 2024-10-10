@@ -1,7 +1,7 @@
 package com.example.finance.data.repository
 
 import com.example.finance.data.dao.OperationDao
-import com.example.finance.domain.entity.OperationEntity
+import com.example.finance.data.entity.OperationEntity
 import com.example.finance.domain.repository.OperationRepository
 import kotlinx.coroutines.flow.Flow
 

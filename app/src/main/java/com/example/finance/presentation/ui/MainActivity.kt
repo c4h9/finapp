@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.example.finance.presentation.viewmodel.MainViewModel
+import com.example.finance.ui.theme.FinanceAppTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -13,7 +14,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         viewModel = MainViewModel(application)
         setContent {
-            MainContent(viewModel)
+            FinanceAppTheme {
+                MainContent(viewModel)
+            }
         }
     }
 

@@ -18,7 +18,10 @@ fun NavigationGraph(
     notificationTextValue: String,
     onGetNotificationAccess: () -> Unit
 ) {
-    NavHost(navController = navController, startDestination = Screen.Categories.route) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Categories.route
+    ) {
         composable(Screen.Categories.route) {
             CategoriesScreen(viewModel)
         }
@@ -28,7 +31,8 @@ fun NavigationGraph(
         composable(Screen.Settings.route) {
             SettingsScreen(
                 notificationTextValue = notificationTextValue,
-                onGetNotificationAccess = onGetNotificationAccess
+                onGetNotificationAccess = onGetNotificationAccess,
+                viewModel = viewModel
             )
         }
         composable(Screen.Permission.route) {

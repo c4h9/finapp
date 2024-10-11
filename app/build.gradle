@@ -59,42 +59,45 @@ dependencies {
     implementation libs.androidx.material3
 
     // Compose
-    implementation "androidx.compose.ui:ui:1.7.2"
-    implementation 'androidx.compose.material3:material3:1.3.0'
-    implementation "androidx.compose.ui:ui-tooling-preview:1.7.2"
+    implementation libs.ui
+    implementation libs.material3
+    implementation libs.ui.tooling.preview
     implementation libs.androidx.ui.text.google.fonts
-    debugImplementation "androidx.compose.ui:ui-tooling:1.7.2"
+    debugImplementation libs.ui.tooling
+
     //Шрифты
     implementation libs.androidx.ui.text.google.fonts.vlatestversion
 
+    implementation libs.androidx.datastore.preferences
+
     // Activity Compose
-    implementation 'androidx.activity:activity-compose:1.9.2'
+    implementation libs.androidx.activity.compose
 
     // Navigation Compose
-    implementation 'androidx.navigation:navigation-compose:2.8.1'
+    implementation libs.androidx.navigation.compose
 
     // Room
     def room_version = "2.6.1"
-    implementation "androidx.room:room-runtime:$room_version"
+    implementation libs.androidx.room.runtime
     kapt "androidx.room:room-compiler:$room_version"
-    implementation "androidx.room:room-ktx:$room_version" // Для поддержки корутин
+    implementation libs.androidx.room.ktx // Для поддержки корутин
 
     // Retrofit
-    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
+    implementation libs.retrofit2.retrofit
+    implementation libs.converter.gson
 
     // Coroutines
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.coroutines.android
 
     // Lifecycle ViewModel Compose
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6'
+    implementation libs.androidx.lifecycle.viewmodel.compose
     
     // Для работы с датой и временем
-    implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.6.1'
+    implementation libs.kotlinx.datetime
 
     // Для пиздатых иконок
-    implementation "androidx.compose.material:material-icons-extended:1.7.3"
+    implementation libs.androidx.material.icons.extended
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

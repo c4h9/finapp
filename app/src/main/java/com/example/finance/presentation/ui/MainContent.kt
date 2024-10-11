@@ -1,3 +1,4 @@
+// MainContent.kt
 package com.example.finance.presentation.ui
 
 import androidx.compose.foundation.layout.Box
@@ -31,4 +32,3 @@ fun MainContent(viewModel: MainViewModel) {
         }
     }
 }
-

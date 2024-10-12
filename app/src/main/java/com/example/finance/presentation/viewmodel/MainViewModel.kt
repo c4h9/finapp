@@ -4,6 +4,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance.NotificationInfo
 import com.example.finance.data.database.AppDatabase
+import com.example.finance.data.datastore.KeywordsDataStore
 import com.example.finance.data.entity.OperationEntity
 import com.example.finance.data.repository.NotificationRepositoryImpl
 import com.example.finance.data.repository.OperationRepositoryImpl
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
 
 class MainViewModel(application: Application) : AndroidViewModel(application), NotificationListener {
 
@@ -31,6 +33,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _operations = MutableStateFlow<List<OperationEntity>>(emptyList())
     val operations: StateFlow<List<OperationEntity>> = _operations.asStateFlow()
 
+    private val keywordsDataStore = KeywordsDataStore(application)
+
+    private val _keywords = MutableStateFlow<List<String>>(listOf("Покупка"))
+    val keywords: StateFlow<List<String>> = _keywords.asStateFlow()
+
     init {
         val database = AppDatabase.getDatabase(application)
         notificationRepository = NotificationRepositoryImpl(application)
@@ -39,6 +46,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         viewModelScope.launch {
             operationRepository.getAllOperations().collect { operationsList ->
                 _operations.value = operationsList
+            }
+            keywordsDataStore.keywordsFlow.collect { storedKeywords ->
+                if (storedKeywords.isNotEmpty()) {
+                    _keywords.value = storedKeywords.toList()
+                } else {
+                    _keywords.value = listOf("Покупка")
+                }
             }
         }
     }
@@ -84,15 +98,63 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
 
 
     override fun onNotificationReceived(notificationInfo: NotificationInfo) {
-        viewModelScope.launch {
-            _notificationText.value += "\nNotification Message from: ${notificationInfo.packageName}" +
-                    "\nTitle: ${notificationInfo.title}" +
-                    "\nText: ${notificationInfo.text}" +
-                    "\nInfo: ${notificationInfo.infoText}\n"
+        val notificationText = notificationInfo.text ?: ""
+        val notificationTitle = notificationInfo.title ?: ""
+        val fullText = "$notificationTitle $notificationText"
+
+        val matchedKeyword = keywords.value.firstOrNull { keyword ->
+            fullText.contains(keyword, ignoreCase = true)
+        }
+
+        if (matchedKeyword != null) {
+            val amount = parseAmountFromNotification(fullText)
+            if (amount != null) {
+                val defaultCategory = categories.value.firstOrNull() ?: Category("Help", CategoryIconType.Help)
+                addOperation(defaultCategory, amount)
+                viewModelScope.launch {
+                    _notificationText.value += "\nСумма $amount добавлена из уведомления с ключевым словом '$matchedKeyword'"
+                }
+            } else {
+                viewModelScope.launch {
+                    _notificationText.value += "\nКлючевое слово '$matchedKeyword' найдено, но не удалось распознать сумму."
+                }
+            }
+        } else {
+            viewModelScope.launch {
+                _notificationText.value += "\nУведомление не содержит ключевых слов."
+            }
         }
     }
+
+    private fun parseAmountFromNotification(text: String): Double? {
+        val amountRegex = Regex("""\d+[.,]\d{1,2}""")
+        val matchResult = amountRegex.find(text)
+        if (matchResult != null) {
+            val amountString = matchResult.value.replace(',', '.')
+            return amountString.toDoubleOrNull()
+        }
+        return null
+    }
+
 
     override fun onListenerStatusChange() {
         // TODO
     }
+
+    fun addKeyword(keyword: String) {
+        viewModelScope.launch {
+            val newKeywords = _keywords.value + keyword
+            _keywords.value = newKeywords
+            keywordsDataStore.saveKeywords(newKeywords.toSet())
+        }
+    }
+
+    fun removeKeyword(keyword: String) {
+        viewModelScope.launch {
+            val newKeywords = _keywords.value - keyword
+            _keywords.value = newKeywords
+            keywordsDataStore.saveKeywords(newKeywords.toSet())
+        }
+    }
+
 }

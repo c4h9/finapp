@@ -1,5 +1,9 @@
 package com.example.finance.presentation.viewmodel
 import android.app.Application
+import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finance.NotificationInfo
@@ -16,8 +20,12 @@ import com.example.finance.domain.repository.OperationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+private val Context.dataStore by preferencesDataStore(name = "app_prefs")
+private val IS_FIRST_LAUNCH_KEY = booleanPreferencesKey("is_first_launch")
+private val DONT_SHOW_PERMISSION_SCREEN_KEY = booleanPreferencesKey("dont_show_permission_screen")
 
 class MainViewModel(application: Application) : AndroidViewModel(application), NotificationListener {
 
@@ -27,7 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _notificationText = MutableStateFlow("")
     val notificationText = _notificationText.asStateFlow()
 
-    private val _categories = MutableStateFlow<List<Category>>(initialCategories())
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
     private val _operations = MutableStateFlow<List<OperationEntity>>(emptyList())
@@ -38,12 +46,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _keywords = MutableStateFlow<List<String>>(listOf("Покупка"))
     val keywords: StateFlow<List<String>> = _keywords.asStateFlow()
 
+    private val _isFirstLaunch = MutableStateFlow(true)
+    val isFirstLaunch: StateFlow<Boolean> get() = _isFirstLaunch
+
+    private val _dontShowPermissionScreen = MutableStateFlow(false)
+    val dontShowPermissionScreen: StateFlow<Boolean> get() = _dontShowPermissionScreen
+
     init {
         val database = AppDatabase.getDatabase(application)
         notificationRepository = NotificationRepositoryImpl(application)
         operationRepository = OperationRepositoryImpl(database.operationDao())
 
         viewModelScope.launch {
+            val preferences = application.dataStore.data.first()
+            _isFirstLaunch.value = preferences[IS_FIRST_LAUNCH_KEY] ?: true
+            _dontShowPermissionScreen.value = preferences[DONT_SHOW_PERMISSION_SCREEN_KEY] ?: false
             operationRepository.getAllOperations().collect { operationsList ->
                 _operations.value = operationsList
             }
@@ -57,17 +74,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
-    private fun initialCategories(): List<Category> {
-        return listOf(
-            Category("Еда", CategoryIconType.Fastfood),
-            Category("Транспорт", CategoryIconType.DirectionsCar),
-            Category("Дом", CategoryIconType.Home),
-            Category("Работа", CategoryIconType.Work),
-            Category("Спорт", CategoryIconType.FitnessCenter),
-            Category("Покупки", CategoryIconType.ShoppingCart),
-            Category("Развлечения", CategoryIconType.Movie)
-        )
+    suspend fun setFirstLaunch(isFirstLaunch: Boolean) {
+        _isFirstLaunch.value = isFirstLaunch
+        getApplication<Application>().dataStore.edit { preferences ->
+            preferences[IS_FIRST_LAUNCH_KEY] = isFirstLaunch
+        }
     }
+
+    suspend fun setDontShowPermissionScreen(value: Boolean) {
+        _dontShowPermissionScreen.value = value
+        getApplication<Application>().dataStore.edit { preferences ->
+            preferences[DONT_SHOW_PERMISSION_SCREEN_KEY] = value
+        }
+    }
+
+    fun setInitialCategories(categories: List<Category>) {
+        _categories.value = categories
+    }
+
 
     fun addCategory(category: Category) {
         _categories.value = _categories.value + category

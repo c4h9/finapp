@@ -162,9 +162,6 @@ fun CategoriesScreen(viewModel: MainViewModel) {
     }
 }
 
-
-
-
 @Composable
 fun CategoriesGrid(
     categories: List<Category>,

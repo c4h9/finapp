@@ -8,15 +8,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -50,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
@@ -168,12 +171,12 @@ fun CategoriesGrid(
     onAddCategoryClick: () -> Unit,
     onCategoryClick: (Category) -> Unit
 ) {
-    val columns = 4
+    val itemWidth = 80.dp
 
     val items = categories + Category("Добавить", CategoryIconType.Add)
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Adaptive(minSize = itemWidth),
         contentPadding = PaddingValues(8.dp),
         modifier = Modifier.fillMaxSize()
     ) {
@@ -192,6 +195,7 @@ fun CategoriesGrid(
         }
     }
 }
+
 
 @Composable
 fun AddAmountBottomSheetContent(
@@ -318,33 +322,48 @@ fun CategoryItem(
     category: Category,
     onClick: () -> Unit
 ) {
-    Card(
+    val iconSize = 64.dp
+    val itemWidth = 80.dp
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(4.dp)
+            .width(itemWidth)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Text(
+            text = category.name,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .heightIn(max = 40.dp)
+        )
+        Card(
+            modifier = Modifier
+                .size(iconSize)
+                .clickable(onClick = onClick),
+            elevation = CardDefaults.cardElevation(4.dp),
+            shape = CircleShape
         ) {
-            Icon(
-                imageVector = category.iconType.icon,
-                contentDescription = category.name,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = category.name,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Icon(
+                    imageVector = category.iconType.icon,
+                    contentDescription = category.name,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
+
+
 
 @Composable
 fun IconSelectionGrid(
@@ -402,13 +421,15 @@ fun TimePeriodChips(
             .padding(8.dp),
     ) {
         periods.forEach { period ->
+            val isSelected = selectedPeriod == period
             AssistChip(
                 onClick = { onPeriodSelected(period) },
                 label = { Text(period) },
                 modifier = Modifier.padding(end = 4.dp),
-                colors = if (selectedPeriod == period) {
+                colors = if (isSelected) {
                     AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        labelColor = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
                     AssistChipDefaults.assistChipColors()
@@ -417,6 +438,7 @@ fun TimePeriodChips(
         }
     }
 }
+
 
 @Composable
 fun BudgetCard() {
@@ -427,7 +449,8 @@ fun BudgetCard() {
             .clip(MaterialTheme.shapes.large),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primary
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(
             modifier = Modifier

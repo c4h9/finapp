@@ -23,7 +23,7 @@ fun NavigationGraph(
 ) {
     val isFirstLaunch by viewModel.isFirstLaunch.collectAsState()
 
-    val startDestination = if (isFirstLaunch) {
+    val startDestination = if (isFirstLaunch == true) {
         Screen.FirstLaunch.route
     } else {
         Screen.Categories.route

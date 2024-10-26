@@ -14,32 +14,29 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.finance.domain.entity.Category
-import com.example.finance.domain.entity.CategoryIconType
 import com.example.finance.presentation.viewmodel.MainViewModel
-import kotlinx.coroutines.launch
 
 @Composable
 fun FirstLaunchScreen(navController: NavController, viewModel: MainViewModel) {
-    val coroutineScope = rememberCoroutineScope()
-    val allCategories = listOf(
-        Category("Еда", CategoryIconType.Fastfood),
-        Category("Транспорт", CategoryIconType.DirectionsCar),
-        Category("Дом", CategoryIconType.Home),
-        Category("Работа", CategoryIconType.Work),
-        Category("Спорт", CategoryIconType.FitnessCenter),
-        Category("Покупки", CategoryIconType.ShoppingCart),
-        Category("Развлечения", CategoryIconType.Movie)
-    )
+    val allCategories = viewModel.allCategories
+    val selectedCategories = viewModel.selectedCategories
 
-    // State to hold selected categories
-    val selectedCategories = remember { mutableStateListOf<Category>() }
+    val navigateToNextScreen by viewModel.navigateToNextScreen.collectAsState()
+
+    if (navigateToNextScreen) {
+        LaunchedEffect(Unit) {
+            navController.navigate("permission") {
+                popUpTo("first_launch") { inclusive = true }
+            }
+            viewModel.onNavigatedToNextScreen()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
@@ -58,11 +55,7 @@ fun FirstLaunchScreen(navController: NavController, viewModel: MainViewModel) {
                     Checkbox(
                         checked = selectedCategories.contains(category),
                         onCheckedChange = { isChecked ->
-                            if (isChecked) {
-                                selectedCategories.add(category)
-                            } else {
-                                selectedCategories.remove(category)
-                            }
+                            viewModel.onCategoryCheckedChanged(category, isChecked)
                         }
                     )
                     Text(
@@ -75,15 +68,10 @@ fun FirstLaunchScreen(navController: NavController, viewModel: MainViewModel) {
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
         Button(
             onClick = {
-                coroutineScope.launch {
-                    viewModel.setInitialCategories(selectedCategories)
-                    viewModel.setFirstLaunch(false)
-                    navController.navigate("permission") {
-                        popUpTo("first_launch") { inclusive = true }
-                    }
-                }
+                viewModel.onContinueClicked()
             },
             modifier = Modifier.fillMaxWidth()
         ) {

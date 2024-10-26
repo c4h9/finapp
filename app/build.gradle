@@ -100,6 +100,10 @@ dependencies {
     // Для пиздатых иконок
     implementation libs.androidx.material.icons.extended
 
+    //Сериализация
+    implementation(libs.kotlinx.serialization.json)
+
+
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core

@@ -87,7 +87,6 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Отображение текста уведомлений для отладки
-        Text(notificationTextValue)
+        Text(notificationTextValue) // Отображение текста уведомлений для отладки
     }
 }

@@ -1,6 +1,8 @@
 package com.example.finance.presentation.viewmodel
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
@@ -27,6 +29,18 @@ private val Context.dataStore by preferencesDataStore(name = "app_prefs")
 private val IS_FIRST_LAUNCH_KEY = booleanPreferencesKey("is_first_launch")
 private val DONT_SHOW_PERMISSION_SCREEN_KEY = booleanPreferencesKey("dont_show_permission_screen")
 
+object InitialData {
+    val allCategories = listOf(
+        Category("Еда", CategoryIconType.Fastfood),
+        Category("Транспорт", CategoryIconType.DirectionsCar),
+        Category("Дом", CategoryIconType.Home),
+        Category("Работа", CategoryIconType.Work),
+        Category("Спорт", CategoryIconType.FitnessCenter),
+        Category("Покупки", CategoryIconType.ShoppingCart),
+        Category("Развлечения", CategoryIconType.Movie)
+    )
+}
+
 class MainViewModel(application: Application) : AndroidViewModel(application), NotificationListener {
 
     private val notificationRepository: NotificationRepository
@@ -34,6 +48,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
 
     private val _notificationText = MutableStateFlow("")
     val notificationText = _notificationText.asStateFlow()
+
+    val allCategories = InitialData.allCategories
+
+    private val _selectedCategories = mutableStateListOf<Category>()
+    val selectedCategories: SnapshotStateList<Category> get() = _selectedCategories
+
+    private val _navigateToNextScreen = MutableStateFlow(false)
+    val navigateToNextScreen: StateFlow<Boolean> get() = _navigateToNextScreen
 
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
@@ -46,11 +68,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _keywords = MutableStateFlow<List<String>>(listOf("Покупка"))
     val keywords: StateFlow<List<String>> = _keywords.asStateFlow()
 
-    private val _isFirstLaunch = MutableStateFlow(true)
-    val isFirstLaunch: StateFlow<Boolean> get() = _isFirstLaunch
+    private val _isDataLoaded = MutableStateFlow(false)
+    val isDataLoaded: StateFlow<Boolean> get() = _isDataLoaded
 
-    private val _dontShowPermissionScreen = MutableStateFlow(false)
-    val dontShowPermissionScreen: StateFlow<Boolean> get() = _dontShowPermissionScreen
+    private val _isFirstLaunch = MutableStateFlow<Boolean?>(null)
+    val isFirstLaunch: StateFlow<Boolean?> get() = _isFirstLaunch
+
+    private val _dontShowPermissionScreen = MutableStateFlow<Boolean?>(null)
+    val dontShowPermissionScreen: StateFlow<Boolean?> get() = _dontShowPermissionScreen
 
     init {
         val database = AppDatabase.getDatabase(application)
@@ -58,26 +83,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         operationRepository = OperationRepositoryImpl(database.operationDao())
 
         viewModelScope.launch {
-            val preferences = application.dataStore.data.first()
-            _isFirstLaunch.value = preferences[IS_FIRST_LAUNCH_KEY] ?: true
-            _dontShowPermissionScreen.value = preferences[DONT_SHOW_PERMISSION_SCREEN_KEY] ?: false
+            initializePreferences()
+            _isDataLoaded.value = true
+        }
+        observeOperations()
+        observeKeywords()
+    }
+
+    private suspend fun initializePreferences() {
+        val preferences = getApplication<Application>().dataStore.data.first()
+        _isFirstLaunch.value = preferences[IS_FIRST_LAUNCH_KEY] ?: true
+        _dontShowPermissionScreen.value = preferences[DONT_SHOW_PERMISSION_SCREEN_KEY] ?: false
+    }
+
+    private fun observeOperations() {
+        viewModelScope.launch {
             operationRepository.getAllOperations().collect { operationsList ->
                 _operations.value = operationsList
-            }
-            keywordsDataStore.keywordsFlow.collect { storedKeywords ->
-                if (storedKeywords.isNotEmpty()) {
-                    _keywords.value = storedKeywords.toList()
-                } else {
-                    _keywords.value = listOf("Покупка")
-                }
             }
         }
     }
 
-    suspend fun setFirstLaunch(isFirstLaunch: Boolean) {
-        _isFirstLaunch.value = isFirstLaunch
-        getApplication<Application>().dataStore.edit { preferences ->
-            preferences[IS_FIRST_LAUNCH_KEY] = isFirstLaunch
+    private fun observeKeywords() {
+        viewModelScope.launch {
+            keywordsDataStore.keywordsFlow.collect { storedKeywords ->
+                _keywords.value = if (storedKeywords.isNotEmpty()) {
+                    storedKeywords.toList()
+                } else {
+                    listOf("Покупка")
+                }
+            }
         }
     }
 
@@ -92,9 +127,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         _categories.value = categories
     }
 
+    fun onCategoryCheckedChanged(category: Category, isChecked: Boolean) {
+        if (isChecked) {
+            _selectedCategories.add(category)
+        } else {
+            _selectedCategories.remove(category)
+        }
+    }
+
+    fun onContinueClicked() {
+        setInitialCategories(_selectedCategories)
+        setFirstLaunch(false)
+        _navigateToNextScreen.value = true
+    }
+
+    fun setFirstLaunch(isFirstLaunch: Boolean) {
+        viewModelScope.launch {
+            _isFirstLaunch.value = isFirstLaunch
+            getApplication<Application>().dataStore.edit { preferences ->
+                preferences[IS_FIRST_LAUNCH_KEY] = isFirstLaunch
+            }
+        }
+    }
+
+
+    fun onNavigatedToNextScreen() {
+        _navigateToNextScreen.value = false
+    }
 
     fun addCategory(category: Category) {
         _categories.value = _categories.value + category
+    }
+
+    fun removeCategory(category: Category) {
+        _categories.value = _categories.value - category
     }
 
     fun getNotificationAccessPermission() {

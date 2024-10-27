@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pets
@@ -33,5 +34,22 @@ enum class CategoryIconType(val icon: ImageVector) {
     TravelExplore(Icons.Default.TravelExplore),
     Add(Icons.Default.Add),
     Help(Icons.AutoMirrored.Filled.Help)
+}
+
+fun getImageVectorByName(iconName: String): ImageVector {
+    return when (iconName) {
+        "Home" -> Icons.Default.Home
+        "ShoppingCart" -> Icons.Default.ShoppingCart
+        "Fastfood" -> Icons.Default.Fastfood
+        "Work" -> Icons.Default.Work
+        "DirectionsCar" -> Icons.Default.DirectionsCar
+        "FitnessCenter" -> Icons.Default.FitnessCenter
+        "Movie" -> Icons.Default.Movie
+        "School" -> Icons.Default.School
+        "Pets" -> Icons.Default.Pets
+        "TravelExplore" -> Icons.Default.TravelExplore
+        "Add" -> Icons.Default.Add
+        else -> Icons.Default.Help
+    }
 }
 

@@ -63,6 +63,7 @@ dependencies {
     implementation libs.material3
     implementation libs.ui.tooling.preview
     implementation libs.androidx.ui.text.google.fonts
+    implementation libs.androidx.foundation.android
     debugImplementation libs.ui.tooling
 
     //Шрифты
@@ -98,6 +99,10 @@ dependencies {
 
     // Для пиздатых иконок
     implementation libs.androidx.material.icons.extended
+
+    //Сериализация
+    implementation(libs.kotlinx.serialization.json)
+
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

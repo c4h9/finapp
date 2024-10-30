@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id 'kotlin-kapt'
+    id 'com.google.devtools.ksp'
 }
 
 android {
@@ -78,9 +78,8 @@ dependencies {
     implementation libs.androidx.navigation.compose
 
     // Room
-    def room_version = "2.6.1"
     implementation libs.androidx.room.runtime
-    kapt "androidx.room:room-compiler:$room_version"
+    ksp libs.androidx.room.compiler
     implementation libs.androidx.room.ktx // Для поддержки корутин
 
     // Retrofit

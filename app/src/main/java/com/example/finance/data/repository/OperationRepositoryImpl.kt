@@ -13,5 +13,17 @@ class OperationRepositoryImpl(private val operationDao: OperationDao) : Operatio
     override fun getAllOperations(): Flow<List<OperationEntity>> {
         return operationDao.getAllOperations()
     }
+
+    override fun getIncomeSumForPeriod(startTime: Long, endTime: Long): Flow<Double?> {
+        return operationDao.getIncomeSumForPeriod(startTime, endTime)
+    }
+
+    override fun getOutcomeSumForPeriod(startTime: Long, endTime: Long): Flow<Double?> {
+        return operationDao.getOutcomeSumForPeriod(startTime, endTime)
+    }
+
+    override suspend fun deleteOperationsByIds(operationIds: List<Int>) {
+        operationDao.deleteOperationsByIds(operationIds)
+    }
 }
 

@@ -5,7 +5,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,8 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -35,12 +35,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,18 +54,44 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
-import com.example.finance.presentation.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
+
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun PreviewCategoriesScreen() {
+//    val outСome: List<Category> = listOf(
+//        Category("Еда", CategoryIconType.Fastfood),
+//        Category("Транспорт", CategoryIconType.Fastfood),
+//        Category("Развлечения", CategoryIconType.Home)
+//    )
+//    val inСome: List<Category> = listOf(
+//        Category("Зарплата", CategoryIconType.Fastfood),
+//        Category("Подработка", CategoryIconType.Fastfood),
+//        Category("Стипендия", CategoryIconType.Home)
+//    )
+//    CategoriesScreen(outСome, inСome, addCategory = {}, onConfirmAddAmountBottomSheetContent = { category, amount -> Unit})
+//}
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CategoriesScreen(viewModel: MainViewModel) {
-    val categories by viewModel.categories.collectAsState()
+fun CategoriesScreen(
+    categories: List<Category>,
+    onConfirmAddAmountBottomSheetContent: (Category, Double) -> Unit,
+    addCategory: (Category, Boolean) -> Unit,
+    budget: Double,
+    outcomes: Double?,
+    incomes: Double?,
+    selectedPeriod: String,
+    onPeriodSelected: (String) -> Unit
+) {
+
 
     var openAddCategoryBottomSheet by remember { mutableStateOf(false) }
     var openAddAmountBottomSheet by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
-
+    var showInCome by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     val bottomSheetState = rememberModalBottomSheetState(
@@ -78,121 +102,202 @@ fun CategoriesScreen(viewModel: MainViewModel) {
         skipPartiallyExpanded = true
     )
 
-    var selectedPeriod by remember { mutableStateOf("Месяц") }
+    Column(modifier = Modifier.fillMaxSize()) {
+        CategoriesGrid(
+            categories = categories,
+            onAddCategoryClick = {
+                openAddCategoryBottomSheet = true
+                coroutineScope.launch { bottomSheetState.show() }
+            },
+            onCategoryClick = { category ->
+                selectedCategory = category
+                openAddAmountBottomSheet = true
+                coroutineScope.launch { amountBottomSheetState.show() }
+            },
+            showInCome,
+            toggleShowInCome = { showInCome = !showInCome },
+            budget = budget,
+            outcomes = outcomes,
+            incomes = incomes,
+            selectedPeriod = selectedPeriod,
+            onPeriodSelected = onPeriodSelected
+        )
 
-    Scaffold { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-
-            Column(modifier = Modifier.fillMaxSize()) {
-                TimePeriodChips(
-                    selectedPeriod = selectedPeriod,
-                    onPeriodSelected = { period ->
-                        selectedPeriod = period
-                        //
-                    }
-                )
-                BudgetCard()
-                Spacer(modifier = Modifier.height(16.dp))
-                CategoriesGrid(
+        if (openAddAmountBottomSheet && selectedCategory != null) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    coroutineScope.launch { amountBottomSheetState.hide() }
+                    openAddAmountBottomSheet = false
+                },
+                sheetState = amountBottomSheetState,
+                dragHandle = null
+            ) {
+                AddAmountBottomSheetContent(
                     categories = categories,
-                    onAddCategoryClick = {
-                        openAddCategoryBottomSheet = true
-                        coroutineScope.launch { bottomSheetState.show() }
+                    initialCategory = selectedCategory!!,
+                    onDismissRequest = {
+                        coroutineScope.launch { amountBottomSheetState.hide() }
+                        openAddAmountBottomSheet = false
                     },
-                    onCategoryClick = { category ->
-                        selectedCategory = category
-                        openAddAmountBottomSheet = true
-                        coroutineScope.launch { amountBottomSheetState.show() }
+                    onConfirm = { category, amount ->
+                        onConfirmAddAmountBottomSheetContent(category, amount)
+                        coroutineScope.launch { amountBottomSheetState.hide() }
+                        openAddAmountBottomSheet = false
                     }
                 )
+            }
+        }
+    }
 
-                if (openAddAmountBottomSheet && selectedCategory != null) {
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            coroutineScope.launch { amountBottomSheetState.hide() }
-                            openAddAmountBottomSheet = false
-                        },
-                        sheetState = amountBottomSheetState,
-                        dragHandle = null
-                    ) {
-                        AddAmountBottomSheetContent(
-                            categories = categories,
-                            initialCategory = selectedCategory!!,
-                            onDismissRequest = {
-                                coroutineScope.launch { amountBottomSheetState.hide() }
-                                openAddAmountBottomSheet = false
-                            },
-                            onConfirm = { category, amount ->
-                                viewModel.addOperation(category, amount)
-                                coroutineScope.launch { amountBottomSheetState.hide() }
-                                openAddAmountBottomSheet = false
+    if (openAddCategoryBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                coroutineScope.launch { bottomSheetState.hide() }
+                openAddCategoryBottomSheet = false
+            },
+            sheetState = bottomSheetState,
+            dragHandle = null
+        ) {
+            AddCategoryBottomSheetContent(
+                onDismissRequest = {
+                    coroutineScope.launch { bottomSheetState.hide() }
+                    openAddCategoryBottomSheet = false
+                },
+                onConfirm = { newCategory ->
+                    addCategory(newCategory, showInCome)
+                    coroutineScope.launch { bottomSheetState.hide() }
+                    openAddCategoryBottomSheet = false
+                },
+                showInCome
+            )
+        }
+    }
+}
+
+
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CategoriesGrid(
+    categories: List<Category>,
+    onAddCategoryClick: () -> Unit,
+    onCategoryClick: (Category) -> Unit,
+    showIncome: Boolean,
+    toggleShowInCome: () -> Unit,
+    budget: Double,
+    outcomes: Double?,
+    incomes: Double?,
+    selectedPeriod: String,
+    onPeriodSelected: (String) -> Unit
+) {
+    val incomeItems: List<Category> = categories.filter { it.isIncome }+ Category("Добавить", CategoryIconType.Add, true)
+    val outcomeItems: List<Category> = categories.filter { !it.isIncome }+ Category("Добавить", CategoryIconType.Add, false)
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item {
+            TimePeriodChips(
+                selectedPeriod = selectedPeriod,
+                onPeriodSelected = onPeriodSelected,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item {
+            BudgetCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClickBudgetCard = { toggleShowInCome() },
+                budget = budget,
+                outcomes = outcomes ?: 0.0,
+                incomes = incomes ?: 0.0
+            )
+        }
+        item {
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (showIncome) {
+                    incomeItems.forEach { category ->
+                        CategoryItem(
+                            category = category,
+                            onClick = {
+                                if (category.name == "Добавить") {
+                                    onAddCategoryClick()
+                                } else {
+                                    onCategoryClick(category)
+                                }
                             }
                         )
                     }
                 }
-            }
-
-            if (openAddCategoryBottomSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        coroutineScope.launch { bottomSheetState.hide() }
-                        openAddCategoryBottomSheet = false
-                    },
-                    sheetState = bottomSheetState,
-                    dragHandle = null
-                ) {
-                    AddCategoryBottomSheetContent(
-                        onDismissRequest = {
-                            coroutineScope.launch { bottomSheetState.hide() }
-                            openAddCategoryBottomSheet = false
-                        },
-                        onConfirm = { newCategory ->
-                            viewModel.addCategory(newCategory)
-                            coroutineScope.launch { bottomSheetState.hide() }
-                            openAddCategoryBottomSheet = false
-                        }
-                    )
+                else {
+                    outcomeItems.forEach { category ->
+                        CategoryItem(
+                            category = category,
+                            onClick = {
+                                if (category.name == "Добавить") {
+                                    onAddCategoryClick()
+                                } else {
+                                    onCategoryClick(category)
+                                }
+                            }
+                        )
+                    }
                 }
+
+
             }
         }
     }
 }
 
 @Composable
-fun CategoriesGrid(
-    categories: List<Category>,
-    onAddCategoryClick: () -> Unit,
-    onCategoryClick: (Category) -> Unit
+fun CategoryItem(
+    category: Category,
+    onClick: () -> Unit
 ) {
-    val itemWidth = 80.dp
+    val iconSize = 60.dp
+    val itemWidth = 75.dp
 
-    val items = categories + Category("Добавить", CategoryIconType.Add)
-
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = itemWidth),
-        contentPadding = PaddingValues(8.dp),
-        modifier = Modifier.fillMaxSize()
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .padding(8.dp)
+            .width(itemWidth)
     ) {
-        items(items.size) { index ->
-            val category = items[index]
-            CategoryItem(
-                category = category,
-                onClick = {
-                    if (category.name == "Добавить") {
-                        onAddCategoryClick()
-                    } else {
-                        onCategoryClick(category)
-                    }
-                }
-            )
+        Text(
+            text = category.name,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .heightIn(max = 40.dp)
+        )
+        Card(
+            modifier = Modifier
+                .size(iconSize)
+                .clickable(onClick = onClick),
+            elevation = CardDefaults.cardElevation(4.dp),
+            shape = CircleShape
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Icon(
+                    imageVector = category.iconType.icon,
+                    contentDescription = category.name,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
-
 
 @Composable
 fun AddAmountBottomSheetContent(
@@ -225,7 +330,6 @@ fun AddAmountBottomSheetContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Ввод суммы
         OutlinedTextField(
             value = amountText,
             onValueChange = {
@@ -313,55 +417,6 @@ fun CategoryDropdown(
     }
 }
 
-
-@Composable
-fun CategoryItem(
-    category: Category,
-    onClick: () -> Unit
-) {
-    val iconSize = 64.dp
-    val itemWidth = 80.dp
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .padding(8.dp)
-            .width(itemWidth)
-    ) {
-        Text(
-            text = category.name,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .padding(bottom = 4.dp)
-                .heightIn(max = 40.dp)
-        )
-        Card(
-            modifier = Modifier
-                .size(iconSize)
-                .clickable(onClick = onClick),
-            elevation = CardDefaults.cardElevation(4.dp),
-            shape = CircleShape
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Icon(
-                    imageVector = category.iconType.icon,
-                    contentDescription = category.name,
-                    modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-    }
-}
-
-
-
 @Composable
 fun IconSelectionGrid(
     icons: List<CategoryIconType>,
@@ -406,7 +461,8 @@ fun IconSelectionGrid(
 @Composable
 fun TimePeriodChips(
     selectedPeriod: String,
-    onPeriodSelected: (String) -> Unit
+    onPeriodSelected: (String) -> Unit,
+    modifier: Modifier
 ) {
     val periods = listOf("День", "Неделя", "Месяц", "Год", "За всё время", "Заданный период")
     val scrollState = rememberScrollState()
@@ -438,16 +494,23 @@ fun TimePeriodChips(
 
 
 @Composable
-fun BudgetCard() {
+fun BudgetCard(
+    modifier: Modifier,
+    onClickBudgetCard: () -> Unit,
+    budget: Double,
+    outcomes: Double,
+    incomes: Double
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+            .padding(16.dp)
             .clip(MaterialTheme.shapes.large),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primary
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(10.dp),
+        onClick = { onClickBudgetCard() }
     ) {
         Column(
             modifier = Modifier
@@ -463,7 +526,7 @@ fun BudgetCard() {
                     modifier = Modifier.weight(0.7f)
                 )
                 Text(
-                    text = "[значение заглушка]",
+                    text = budget.toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
@@ -481,7 +544,7 @@ fun BudgetCard() {
                     modifier = Modifier.weight(0.7f)
                 )
                 Text(
-                    text = "[значение заглушка]",
+                    text = outcomes.toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
@@ -493,13 +556,13 @@ fun BudgetCard() {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Доходы:",
+                    text = "Доходы: ",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(0.7f)
                 )
                 Text(
-                    text = "[значение заглушка]",
+                    text = incomes.toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
@@ -514,7 +577,8 @@ fun BudgetCard() {
 @Composable
 fun AddCategoryBottomSheetContent(
     onDismissRequest: () -> Unit,
-    onConfirm: (Category) -> Unit
+    onConfirm: (Category) -> Unit,
+    isIncome: Boolean
 ) {
     var categoryName by remember { mutableStateOf("") }
     var selectedIconType by remember { mutableStateOf(CategoryIconType.Home) }
@@ -565,7 +629,7 @@ fun AddCategoryBottomSheetContent(
             }
             TextButton(
                 onClick = {
-                    val newCategory = Category(categoryName, selectedIconType)
+                    val newCategory = Category(categoryName, selectedIconType, isIncome)
                     onConfirm(newCategory)
                 },
                 enabled = categoryName.isNotBlank()

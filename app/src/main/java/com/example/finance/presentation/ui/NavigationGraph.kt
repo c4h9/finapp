@@ -21,6 +21,17 @@ fun NavigationGraph(
     notificationTextValue: String,
     onGetNotificationAccess: () -> Unit
 ) {
+    //CategoriesScreen
+    val categories by viewModel.categories.collectAsState()
+    val budget by viewModel.budget.collectAsState()
+    val incomes by viewModel.incomesForCurrentPeriod.collectAsState()
+    val outcomes by viewModel.outcomesForCurrentPeriod.collectAsState()
+
+    //PermissionScreen
+    val allCategories = viewModel.allCategories
+    val selectedCategories = viewModel.selectedCategories
+    val navigateToNextScreen by viewModel.navigateToNextScreen.collectAsState()
+
     val isFirstLaunch by viewModel.isFirstLaunch.collectAsState()
 
     val startDestination = if (isFirstLaunch == true) {
@@ -34,14 +45,44 @@ fun NavigationGraph(
         startDestination = startDestination
     ) {
         composable(Screen.FirstLaunch.route) {
-            FirstLaunchScreen(navController = navController, viewModel = viewModel)
+            FirstLaunchScreen(
+                navController = navController,
+                toTheNextScreen = {
+                    viewModel.onNavigatedToNextScreen()
+                },
+                onClickFilterChip = { category, isSelected ->
+                    viewModel.onCategoryCheckedChanged(category, isSelected)
+                },
+                onContinueClicked = {
+                        value -> viewModel.setBudget(value)
+                        viewModel.onContinueClicked()
+                },
+                allCategories,
+                selectedCategories,
+                navigateToNextScreen,
+                setBudget = { value -> viewModel.setBudget(value)}
+            )
         }
         composable(Screen.Categories.route) {
-            CategoriesScreen(viewModel)
+            CategoriesScreen(
+                categories = categories,
+                addCategory = { newCategory, isIncome -> viewModel.addCategory(newCategory, isIncome) },
+                onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount) },
+                budget = budget,
+                outcomes = outcomes,
+                incomes = incomes,
+                selectedPeriod = viewModel.selectedPeriod.collectAsState().value,
+                onPeriodSelected = { period -> viewModel.setSelectedPeriod(period) }
+            )
         }
         composable(Screen.Operations.route) {
-            OperationsScreen(viewModel)
+            OperationsScreen(
+                operations = viewModel.operations.collectAsState().value,
+                categories = viewModel.categories.collectAsState().value,
+                viewModel = viewModel
+            )
         }
+
         composable(Screen.Settings.route) {
             SettingsScreen(
                 notificationTextValue = notificationTextValue,

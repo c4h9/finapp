@@ -56,24 +56,6 @@ import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
 import kotlinx.coroutines.launch
 
-//@Preview(showBackground = true, showSystemUi = true)
-//@Composable
-//fun PreviewCategoriesScreen() {
-//    val outСome: List<Category> = listOf(
-//        Category("Еда", CategoryIconType.Fastfood),
-//        Category("Транспорт", CategoryIconType.Fastfood),
-//        Category("Развлечения", CategoryIconType.Home)
-//    )
-//    val inСome: List<Category> = listOf(
-//        Category("Зарплата", CategoryIconType.Fastfood),
-//        Category("Подработка", CategoryIconType.Fastfood),
-//        Category("Стипендия", CategoryIconType.Home)
-//    )
-//    CategoriesScreen(outСome, inСome, addCategory = {}, onConfirmAddAmountBottomSheetContent = { category, amount -> Unit})
-//}
-
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
@@ -81,10 +63,8 @@ fun CategoriesScreen(
     onConfirmAddAmountBottomSheetContent: (Category, Double) -> Unit,
     addCategory: (Category, Boolean) -> Unit,
     budget: Double,
-    outcomes: Double?,
-    incomes: Double?,
-    selectedPeriod: String,
-    onPeriodSelected: (String) -> Unit
+    outcomes: Double,
+    incomes: Double
 ) {
 
 
@@ -118,9 +98,7 @@ fun CategoriesScreen(
             toggleShowInCome = { showInCome = !showInCome },
             budget = budget,
             outcomes = outcomes,
-            incomes = incomes,
-            selectedPeriod = selectedPeriod,
-            onPeriodSelected = onPeriodSelected
+            incomes = incomes
         )
 
         if (openAddAmountBottomSheet && selectedCategory != null) {
@@ -185,11 +163,10 @@ fun CategoriesGrid(
     showIncome: Boolean,
     toggleShowInCome: () -> Unit,
     budget: Double,
-    outcomes: Double?,
-    incomes: Double?,
-    selectedPeriod: String,
-    onPeriodSelected: (String) -> Unit
+    outcomes: Double,
+    incomes: Double
 ) {
+    var selectedPeriod by remember { mutableStateOf("Месяц") }
     val incomeItems: List<Category> = categories.filter { it.isIncome }+ Category("Добавить", CategoryIconType.Add, true)
     val outcomeItems: List<Category> = categories.filter { !it.isIncome }+ Category("Добавить", CategoryIconType.Add, false)
 
@@ -199,7 +176,9 @@ fun CategoriesGrid(
         item {
             TimePeriodChips(
                 selectedPeriod = selectedPeriod,
-                onPeriodSelected = onPeriodSelected,
+                onPeriodSelected = { period ->
+                    selectedPeriod = period
+                },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -208,8 +187,8 @@ fun CategoriesGrid(
                 modifier = Modifier.fillMaxWidth(),
                 onClickBudgetCard = { toggleShowInCome() },
                 budget = budget,
-                outcomes = outcomes ?: 0.0,
-                incomes = incomes ?: 0.0
+                outcomes = outcomes,
+                incomes = incomes
             )
         }
         item {
@@ -494,13 +473,7 @@ fun TimePeriodChips(
 
 
 @Composable
-fun BudgetCard(
-    modifier: Modifier,
-    onClickBudgetCard: () -> Unit,
-    budget: Double,
-    outcomes: Double,
-    incomes: Double
-) {
+fun BudgetCard(modifier: Modifier, onClickBudgetCard: () -> Unit, budget: Double, outcomes: Double, incomes: Double) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

@@ -62,12 +62,13 @@ fun OperationsScreen(
                         showButton = true
                     },
                     onCheckedChange = { isChecked ->
+                        val newSet = selectedOperations.value.toMutableSet()
                         if (isChecked) {
-                            selectedOperations.value.add(operation.id)
+                            newSet.add(operation.id)
                         } else {
-                            selectedOperations.value.remove(operation.id)
+                            newSet.remove(operation.id)
                         }
-                        selectedOperations.value = selectedOperations.value.toMutableSet()
+                        selectedOperations.value = newSet
                     }
                 )
             }
@@ -158,10 +159,6 @@ fun OperationItem(
     }
 }
 
-
-
-
-
 fun getCategoryIconByName(iconName: String): CategoryIconType {
     return try {
         CategoryIconType.valueOf(iconName)
@@ -169,8 +166,6 @@ fun getCategoryIconByName(iconName: String): CategoryIconType {
         CategoryIconType.Help // Возвращаем иконку по умолчанию
     }
 }
-
-
 
 fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())

@@ -101,9 +101,12 @@ fun SettingsScreen(
         OutlinedTextField(
             value = budget.toString(),
             onValueChange = { newText ->
-                val newBudget = newText.replace(",", ".").toDoubleOrNull()
-                if (newBudget != null) {
-                    viewModel.setBudget(newBudget)
+                val regex = """^\d+(\.\d{0,2})?$""".toRegex()
+                if (regex.matches(newText.replace(",", "."))) {
+                    val newBudget = newText.replace(",", ".").toDoubleOrNull()
+                    if (newBudget != null) {
+                        viewModel.setBudget(newBudget)
+                    }
                 }
             },
             label = { Text("Бюджет") },

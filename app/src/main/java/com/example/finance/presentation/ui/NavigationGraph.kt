@@ -24,8 +24,8 @@ fun NavigationGraph(
     //CategoriesScreen
     val categories by viewModel.categories.collectAsState()
     val budget by viewModel.budget.collectAsState()
-    val incomes by viewModel.incomesForCurrentPeriod.collectAsState()
-    val outcomes by viewModel.outcomesForCurrentPeriod.collectAsState()
+    val incomes by viewModel.incomesForCurrentMonth.collectAsState()
+    val outcomes by viewModel.outcomesForCurrentMonth.collectAsState()
 
     //PermissionScreen
     val allCategories = viewModel.allCategories
@@ -40,6 +40,8 @@ fun NavigationGraph(
         Screen.Categories.route
     }
 
+    //FirstLaunchScreen
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -53,14 +55,12 @@ fun NavigationGraph(
                 onClickFilterChip = { category, isSelected ->
                     viewModel.onCategoryCheckedChanged(category, isSelected)
                 },
-                onContinueClicked = {
-                        value -> viewModel.setBudget(value)
-                        viewModel.onContinueClicked()
-                },
+                onContinueClicked = { viewModel.onContinueClicked() },
                 allCategories,
                 selectedCategories,
                 navigateToNextScreen,
-                setBudget = { value -> viewModel.setBudget(value)}
+                onUpdateBudget = { value -> viewModel.setBudget(value)},
+                budget
             )
         }
         composable(Screen.Categories.route) {
@@ -70,9 +70,9 @@ fun NavigationGraph(
                 onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount) },
                 budget = budget,
                 outcomes = outcomes,
-                incomes = incomes,
-                selectedPeriod = viewModel.selectedPeriod.collectAsState().value,
-                onPeriodSelected = { period -> viewModel.setSelectedPeriod(period) }
+                incomes = incomes
+//                selectedPeriod = viewModel.selectedPeriod.collectAsState().value,
+//                onPeriodSelected = { period -> viewModel.setSelectedPeriod(period) }
             )
         }
         composable(Screen.Operations.route) {

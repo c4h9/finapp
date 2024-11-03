@@ -66,11 +66,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         _selectedPeriod.value = period
     }
 
-    private val _incomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
-    val incomesForCurrentPeriod: StateFlow<Double?> = _incomesForCurrentPeriod.asStateFlow()
-
-    private val _outcomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
-    val outcomesForCurrentPeriod: StateFlow<Double?> = _outcomesForCurrentPeriod.asStateFlow()
+//    private val _incomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
+//    val incomesForCurrentPeriod: StateFlow<Double?> = _incomesForCurrentPeriod.asStateFlow()
+//
+//    private val _outcomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
+//    val outcomesForCurrentPeriod: StateFlow<Double?> = _outcomesForCurrentPeriod.asStateFlow()
 
     private val _budget = MutableStateFlow(0.0)
     val budget: StateFlow<Double> = _budget.asStateFlow()
@@ -134,6 +134,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
+
     fun setBudget(value: Double) {
         viewModelScope.launch {
             budgetRepository.insertBudget(BudgetEntity(value = value))
@@ -172,20 +173,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     }
     private fun observeIncomesAndOutcomes() {
         viewModelScope.launch {
-            _selectedPeriod.collect { period ->
-                val (startTime, endTime) = getStartAndEndOfPeriod(period)
-                operationRepository.getIncomeSumForPeriod(startTime, endTime).collect { income ->
-                    _incomesForCurrentPeriod.value = income ?: 0.0
-                }
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getIncomeSumForPeriod(startOfMonth, endOfMonth).collect { income ->
+                _incomesForCurrentMonth.value = income ?: 0.0
             }
         }
 
         viewModelScope.launch {
-            _selectedPeriod.collect { period ->
-                val (startTime, endTime) = getStartAndEndOfPeriod(period)
-                operationRepository.getOutcomeSumForPeriod(startTime, endTime).collect { outcome ->
-                    _outcomesForCurrentPeriod.value = outcome ?: 0.0
-                }
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getOutcomeSumForPeriod(startOfMonth, endOfMonth).collect { outcome ->
+                _outcomesForCurrentMonth.value = outcome ?: 0.0
             }
         }
     }
@@ -227,7 +224,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
                 calendar.set(Calendar.MILLISECOND, 0)
             }
             else -> {
-                // Default to current month
                 calendar.set(Calendar.DAY_OF_MONTH, 1)
                 calendar.set(Calendar.HOUR_OF_DAY, 0)
                 calendar.set(Calendar.MINUTE, 0)

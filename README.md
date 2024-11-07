@@ -18,5 +18,14 @@ Finance App — это приложение для автоматизирова�
 - **Navigation Component**
 
 ## Скриншоты приложения в текущем состоянии
-![alt text](https://github.com/c4h9/finapp/blob/master/FirstLaunchScreen.jpg?raw=true)
-![alt text](https://github.com/c4h9/finapp/tree/master/Screenshots/PermissionScreen.jpg?raw=true)
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around;">
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/FirstLaunchScreen.png" alt="Экран первоначальных настроек при запуске" width="300"/>
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/PermissionScreen.png" alt="Экран выдачи разрешения" width="300"/>
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/outcome_categoriesCategoriesScreen.png" alt="Экран категорий трат" width="300"/>
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/income_categories.png" alt="Экран категорий прибыли" width="300"/>
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/AddCategory.png" alt="Добавление категории" width="300"/>
+  <img src="https://github.com/c4h9/finapp/raw/master/Screenshots/Delete_operations.png" alt="Экран всех операций" width="300"/>
+</div>
+
+

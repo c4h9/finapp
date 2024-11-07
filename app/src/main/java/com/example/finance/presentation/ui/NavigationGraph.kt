@@ -70,9 +70,8 @@ fun NavigationGraph(
                 onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount) },
                 budget = budget,
                 outcomes = outcomes,
-                incomes = incomes
-//                selectedPeriod = viewModel.selectedPeriod.collectAsState().value,
-//                onPeriodSelected = { period -> viewModel.setSelectedPeriod(period) }
+                incomes = incomes,
+                categorySums = viewModel.categorySums.collectAsState().value
             )
         }
         composable(Screen.Operations.route) {

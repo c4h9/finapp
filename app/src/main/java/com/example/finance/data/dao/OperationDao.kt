@@ -7,6 +7,11 @@ import androidx.room.Query
 import com.example.finance.data.entity.OperationEntity
 import kotlinx.coroutines.flow.Flow
 
+data class CategorySum(
+    val categoryName: String,
+    val total: Double
+)
+
 @Dao
 interface OperationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -19,7 +24,7 @@ interface OperationDao {
         SELECT SUM(amount) FROM operations 
         WHERE categoryName IN (SELECT name FROM categories WHERE isIncome = 1) 
         AND timestamp BETWEEN :startTime AND :endTime
-    """)
+        """)
     fun getIncomeSumForPeriod(startTime: Long, endTime: Long): Flow<Double?>
 
     @Query("""
@@ -31,5 +36,13 @@ interface OperationDao {
 
     @Query("DELETE FROM operations WHERE id IN (:operationIds)")
     suspend fun deleteOperationsByIds(operationIds: List<Int>)
+
+    @Query("""
+    SELECT categoryName, SUM(amount) as total FROM operations 
+    WHERE categoryName IN (SELECT name FROM categories WHERE isIncome = 0) 
+    AND timestamp BETWEEN :startTime AND :endTime 
+    GROUP BY categoryName
+        """)
+    fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>>
 }
 

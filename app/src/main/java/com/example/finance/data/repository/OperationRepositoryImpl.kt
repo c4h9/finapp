@@ -1,5 +1,6 @@
 package com.example.finance.data.repository
 
+import com.example.finance.data.dao.CategorySum
 import com.example.finance.data.dao.OperationDao
 import com.example.finance.data.entity.OperationEntity
 import com.example.finance.domain.repository.OperationRepository
@@ -24,6 +25,10 @@ class OperationRepositoryImpl(private val operationDao: OperationDao) : Operatio
 
     override suspend fun deleteOperationsByIds(operationIds: List<Int>) {
         operationDao.deleteOperationsByIds(operationIds)
+    }
+
+    override fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>> {
+        return operationDao.getSumsPerCategoryForPeriod(startTime, endTime)
     }
 }
 

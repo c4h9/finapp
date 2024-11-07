@@ -56,6 +56,44 @@ import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
 import kotlinx.coroutines.launch
 
+
+val sampleCategories = listOf(
+    Category("Food", CategoryIconType.Home, false),
+    Category("Salary", CategoryIconType.Salary, true),
+    Category("Transport", CategoryIconType.Pets, false)
+)
+
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewCategoriesScreen() {
+//    MaterialTheme {
+//        Surface(modifier = Modifier.fillMaxSize()) {
+//            CategoriesScreen(
+//                categories = sampleCategories,
+//                onConfirmAddAmountBottomSheetContent = { _, _ -> },
+//                addCategory = { _, _ -> },
+//                budget = 1000.0,
+//                outcomes = 300.0,
+//                incomes = 500.0
+//            )
+//        }
+//    }
+//}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewCategoryItem() {
+//    MaterialTheme {
+//        Surface {
+//            CategoryItem(
+//                category = Category("Sample", CategoryIconType.Home, false),
+//                onClick = {},
+//                155.0
+//            )
+//        }
+//    }
+//}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
@@ -64,10 +102,9 @@ fun CategoriesScreen(
     addCategory: (Category, Boolean) -> Unit,
     budget: Double,
     outcomes: Double,
-    incomes: Double
+    incomes: Double,
+    categorySums: Map<String, Double>
 ) {
-
-
     var openAddCategoryBottomSheet by remember { mutableStateOf(false) }
     var openAddAmountBottomSheet by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
@@ -98,7 +135,8 @@ fun CategoriesScreen(
             toggleShowInCome = { showInCome = !showInCome },
             budget = budget,
             outcomes = outcomes,
-            incomes = incomes
+            incomes = incomes,
+            categorySums = categorySums
         )
 
         if (openAddAmountBottomSheet && selectedCategory != null) {
@@ -152,8 +190,6 @@ fun CategoriesScreen(
     }
 }
 
-
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CategoriesGrid(
@@ -164,11 +200,12 @@ fun CategoriesGrid(
     toggleShowInCome: () -> Unit,
     budget: Double,
     outcomes: Double,
-    incomes: Double
+    incomes: Double,
+    categorySums: Map<String, Double>
 ) {
     var selectedPeriod by remember { mutableStateOf("Месяц") }
-    val incomeItems: List<Category> = categories.filter { it.isIncome }+ Category("Добавить", CategoryIconType.Add, true)
-    val outcomeItems: List<Category> = categories.filter { !it.isIncome }+ Category("Добавить", CategoryIconType.Add, false)
+    val incomeItems: List<Category> = categories.filter { it.isIncome } + Category("Добавить", CategoryIconType.Add, true)
+    val outcomeItems: List<Category> = categories.filter { !it.isIncome } + Category("Добавить", CategoryIconType.Add, false)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -197,36 +234,20 @@ fun CategoriesGrid(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                if (showIncome) {
-                    incomeItems.forEach { category ->
-                        CategoryItem(
-                            category = category,
-                            onClick = {
-                                if (category.name == "Добавить") {
-                                    onAddCategoryClick()
-                                } else {
-                                    onCategoryClick(category)
-                                }
+                val items = if (showIncome) incomeItems else outcomeItems
+                items.forEach { category ->
+                    CategoryItem(
+                        category = category,
+                        onClick = {
+                            if (category.name == "Добавить") {
+                                onAddCategoryClick()
+                            } else {
+                                onCategoryClick(category)
                             }
-                        )
-                    }
+                        },
+                        amount = if (category.name == "Добавить") null else categorySums[category.name] ?: 0.0
+                    )
                 }
-                else {
-                    outcomeItems.forEach { category ->
-                        CategoryItem(
-                            category = category,
-                            onClick = {
-                                if (category.name == "Добавить") {
-                                    onAddCategoryClick()
-                                } else {
-                                    onCategoryClick(category)
-                                }
-                            }
-                        )
-                    }
-                }
-
-
             }
         }
     }
@@ -235,7 +256,8 @@ fun CategoriesGrid(
 @Composable
 fun CategoryItem(
     category: Category,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    amount: Double? = 0.0
 ) {
     val iconSize = 60.dp
     val itemWidth = 75.dp
@@ -256,6 +278,7 @@ fun CategoryItem(
                 .padding(bottom = 4.dp)
                 .heightIn(max = 40.dp)
         )
+
         Card(
             modifier = Modifier
                 .size(iconSize)
@@ -275,8 +298,26 @@ fun CategoryItem(
                 )
             }
         }
+
+        if (amount != null) {
+            Text(
+                text = amount.toString() + " ₽",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (amount != 0.0) FontWeight.Bold else FontWeight.Normal
+                ),
+                color = if (amount == 0.0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .heightIn(max = 40.dp)
+            )
+        }
     }
 }
+
+
 
 @Composable
 fun AddAmountBottomSheetContent(

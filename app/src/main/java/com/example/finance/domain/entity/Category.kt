@@ -41,7 +41,7 @@ enum class CategoryIconType(val icon: ImageVector) {
     Underworking(Icons.Default.Add),
     Deposit(Icons.Default.Add),
     Scholarship(Icons.Default.Add),
-    Help(Icons.AutoMirrored.Filled.Help)
+    Help(Icons.AutoMirrored.Filled.Help),
 }
 
 fun getImageVectorByName(iconName: String): ImageVector {

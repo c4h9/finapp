@@ -66,11 +66,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         _selectedPeriod.value = period
     }
 
-//    private val _incomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
-//    val incomesForCurrentPeriod: StateFlow<Double?> = _incomesForCurrentPeriod.asStateFlow()
-//
-//    private val _outcomesForCurrentPeriod = MutableStateFlow<Double?>(0.0)
-//    val outcomesForCurrentPeriod: StateFlow<Double?> = _outcomesForCurrentPeriod.asStateFlow()
+    private val _categorySums = MutableStateFlow<Map<String, Double>>(emptyMap())
+    val categorySums: StateFlow<Map<String, Double>> = _categorySums.asStateFlow()
 
     private val _budget = MutableStateFlow(0.0)
     val budget: StateFlow<Double> = _budget.asStateFlow()
@@ -127,9 +124,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         observeOperations()
         observeIncomesAndOutcomes()
         observeKeywords()
+        observeCategorySums()
         viewModelScope.launch {
             budgetRepository.getBudget().collect { budgetEntity ->
                 _budget.value = budgetEntity?.value ?: 0.0
+            }
+        }
+    }
+
+    private fun observeCategorySums() {
+        viewModelScope.launch {
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getSumsPerCategoryForPeriod(startOfMonth, endOfMonth).collect { categorySumsList ->
+                val sumsMap = categorySumsList.associate { it.categoryName to it.total }
+                _categorySums.value = sumsMap
             }
         }
     }

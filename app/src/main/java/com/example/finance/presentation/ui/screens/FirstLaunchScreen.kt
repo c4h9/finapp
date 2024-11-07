@@ -1,77 +1,111 @@
 package com.example.finance.presentation.ui.screens
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.finance.presentation.viewmodel.MainViewModel
+import com.example.finance.domain.entity.Category
 
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FirstLaunchScreen(navController: NavController, viewModel: MainViewModel) {
-    val allCategories = viewModel.allCategories
-    val selectedCategories = viewModel.selectedCategories
-
-    val navigateToNextScreen by viewModel.navigateToNextScreen.collectAsState()
-
+fun FirstLaunchScreen(
+    navController: NavController,
+    toTheNextScreen: () -> Unit,
+    onClickFilterChip: (Category, Boolean) -> Unit,
+    onContinueClicked: () -> Unit,
+    allCategories: List<Category>,
+    selectedCategories: List<Category>,
+    navigateToNextScreen: Boolean,
+    onUpdateBudget: (Double) -> Unit,
+    budget: Double
+    ) {
     if (navigateToNextScreen) {
         LaunchedEffect(Unit) {
             navController.navigate("permission") {
                 popUpTo("first_launch") { inclusive = true }
             }
-            viewModel.onNavigatedToNextScreen()
+            toTheNextScreen()
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text(
-            text = "Выберите категории для начала:",
+            text = "Выберите категории расходов:",
             style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+        FlowRow(modifier = Modifier.fillMaxWidth()) {
+            allCategories.filter { !it.isIncome }.forEach { category ->
+                val isSelected = selectedCategories.contains(category)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onClickFilterChip(category, !isSelected) },
+                    label = { Text(text = category.name) },
+                    shape = CircleShape,
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Выберите категории доходов:",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        LazyColumn {
-            items(allCategories) { category ->
-                Row(
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                ) {
-                    Checkbox(
-                        checked = selectedCategories.contains(category),
-                        onCheckedChange = { isChecked ->
-                            viewModel.onCategoryCheckedChanged(category, isChecked)
-                        }
-                    )
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
+        FlowRow(modifier = Modifier.fillMaxWidth()) {
+            allCategories.filter { it.isIncome }.forEach { category ->
+                val isSelected = selectedCategories.contains(category)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onClickFilterChip(category, !isSelected) },
+                    label = { Text(text = category.name) },
+                    shape = CircleShape,
+                    modifier = Modifier.padding(4.dp)
+                )
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Text("Введите месячный бюджет:", style = MaterialTheme.typography.titleMedium)
+        OutlinedTextField(
+            value = budget.toString(),
+            onValueChange = { newText ->
+                val regex = """^\d+(\.\d{0,2})?$""".toRegex()
+                if (regex.matches(newText.replace(",", "."))) {
+                    val newBudget = newText.replace(",", ".").toDoubleOrNull()
+                    if (newBudget != null) {
+                        onUpdateBudget(newBudget)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            label = { Text("Бюджет") }
+        )
 
         Button(
             onClick = {
-                viewModel.onContinueClicked()
+                onContinueClicked()
             },
             modifier = Modifier.fillMaxWidth()
         ) {

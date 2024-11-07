@@ -11,11 +11,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.finance.NotificationInfo
 import com.example.finance.data.database.AppDatabase
 import com.example.finance.data.datastore.KeywordsDataStore
+import com.example.finance.data.entity.BudgetEntity
+import com.example.finance.data.entity.CategoryEntity
 import com.example.finance.data.entity.OperationEntity
+import com.example.finance.data.repository.BudgetRepositoryImpl
+import com.example.finance.data.repository.CategoryRepositoryImpl
 import com.example.finance.data.repository.NotificationRepositoryImpl
 import com.example.finance.data.repository.OperationRepositoryImpl
 import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
+import com.example.finance.domain.repository.BudgetRepository
+import com.example.finance.domain.repository.CategoryRepository
 import com.example.finance.domain.repository.NotificationListener
 import com.example.finance.domain.repository.NotificationRepository
 import com.example.finance.domain.repository.OperationRepository
@@ -24,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 private val Context.dataStore by preferencesDataStore(name = "app_prefs")
 private val IS_FIRST_LAUNCH_KEY = booleanPreferencesKey("is_first_launch")
@@ -31,13 +38,19 @@ private val DONT_SHOW_PERMISSION_SCREEN_KEY = booleanPreferencesKey("dont_show_p
 
 object InitialData {
     val allCategories = listOf(
-        Category("Еда", CategoryIconType.Fastfood),
-        Category("Транспорт", CategoryIconType.DirectionsCar),
-        Category("Дом", CategoryIconType.Home),
-        Category("Работа", CategoryIconType.Work),
-        Category("Спорт", CategoryIconType.FitnessCenter),
-        Category("Покупки", CategoryIconType.ShoppingCart),
-        Category("Развлечения", CategoryIconType.Movie)
+        //Расходы
+        Category("Еда", CategoryIconType.Fastfood, false),
+        Category("Транспорт", CategoryIconType.DirectionsCar, false),
+        Category("Дом", CategoryIconType.Home, false),
+        Category("Спорт", CategoryIconType.FitnessCenter, false),
+        Category("Покупки", CategoryIconType.ShoppingCart, false),
+        Category("Развлечения", CategoryIconType.Movie, false),
+        Category("Здоровье", CategoryIconType.Health, false),
+        //Доходы
+        Category("Зарплата", CategoryIconType.Salary, true),
+        Category("Подработка", CategoryIconType.Underworking, true),
+        Category("Депозит", CategoryIconType.Deposit, true),
+        Category("Стипендия", CategoryIconType.Scholarship, true)
     )
 }
 
@@ -45,6 +58,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
 
     private val notificationRepository: NotificationRepository
     private val operationRepository: OperationRepository
+    private val categoryRepository: CategoryRepository
+    private val budgetRepository: BudgetRepository
+
+    private val _selectedPeriod = MutableStateFlow("Месяц")
+    val selectedPeriod: StateFlow<String> = _selectedPeriod.asStateFlow()
+
+    fun setSelectedPeriod(period: String) {
+        _selectedPeriod.value = period
+    }
+
+    private val _categorySums = MutableStateFlow<Map<String, Double>>(emptyMap())
+    val categorySums: StateFlow<Map<String, Double>> = _categorySums.asStateFlow()
+
+    private val _budget = MutableStateFlow(0.0)
+    val budget: StateFlow<Double> = _budget.asStateFlow()
+
+    private val _incomesForCurrentMonth = MutableStateFlow(0.0)
+    val incomesForCurrentMonth: StateFlow<Double> = _incomesForCurrentMonth.asStateFlow()
+
+    private val _outcomesForCurrentMonth = MutableStateFlow(0.0)
+    val outcomesForCurrentMonth: StateFlow<Double> = _outcomesForCurrentMonth.asStateFlow()
 
     private val _notificationText = MutableStateFlow("")
     val notificationText = _notificationText.asStateFlow()
@@ -79,21 +113,154 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
 
     init {
         val database = AppDatabase.getDatabase(application)
+        categoryRepository = CategoryRepositoryImpl(database.categoryDao())
         notificationRepository = NotificationRepositoryImpl(application)
         operationRepository = OperationRepositoryImpl(database.operationDao())
+        budgetRepository = BudgetRepositoryImpl(database.budgetDao())
 
         viewModelScope.launch {
             initializePreferences()
             _isDataLoaded.value = true
         }
+        observeCategories()
         observeOperations()
+        observeIncomesAndOutcomes()
         observeKeywords()
+        observeCategorySums()
+        viewModelScope.launch {
+            budgetRepository.getBudget().collect { budgetEntity ->
+                _budget.value = budgetEntity?.value ?: 0.0
+            }
+        }
+    }
+
+    private fun observeCategorySums() {
+        viewModelScope.launch {
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getSumsPerCategoryForPeriod(startOfMonth, endOfMonth).collect { categorySumsList ->
+                val sumsMap = categorySumsList.associate { it.categoryName to it.total }
+                _categorySums.value = sumsMap
+            }
+        }
+    }
+
+
+    fun setBudget(value: Double) {
+        viewModelScope.launch {
+            budgetRepository.insertBudget(BudgetEntity(value = value))
+        }
     }
 
     private suspend fun initializePreferences() {
         val preferences = getApplication<Application>().dataStore.data.first()
         _isFirstLaunch.value = preferences[IS_FIRST_LAUNCH_KEY] ?: true
         _dontShowPermissionScreen.value = preferences[DONT_SHOW_PERMISSION_SCREEN_KEY] ?: false
+    }
+
+    private fun observeCategories() {
+        viewModelScope.launch {
+            categoryRepository.getAllCategories().collect { categoriesList ->
+                _categories.value = categoriesList.map { categoryEntity ->
+                    Category(
+                        name = categoryEntity.name,
+                        iconType = CategoryIconType.valueOf(categoryEntity.iconType),
+                        isIncome = categoryEntity.isIncome
+                    )
+                }
+            }
+        }
+    }
+
+    fun addCategory(category: Category, isIncome: Boolean) {
+        viewModelScope.launch {
+            val categoryEntity = CategoryEntity(
+                name = category.name,
+                iconType = category.iconType.name,
+                isIncome = isIncome
+            )
+            categoryRepository.insertCategory(categoryEntity)
+        }
+    }
+    private fun observeIncomesAndOutcomes() {
+        viewModelScope.launch {
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getIncomeSumForPeriod(startOfMonth, endOfMonth).collect { income ->
+                _incomesForCurrentMonth.value = income ?: 0.0
+            }
+        }
+
+        viewModelScope.launch {
+            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
+            operationRepository.getOutcomeSumForPeriod(startOfMonth, endOfMonth).collect { outcome ->
+                _outcomesForCurrentMonth.value = outcome ?: 0.0
+            }
+        }
+    }
+
+    private fun getStartAndEndOfPeriod(period: String): Pair<Long, Long> {
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+
+        when (period) {
+            "День" -> {
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            "Неделя" -> {
+                calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            "Месяц" -> {
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            "Год" -> {
+                calendar.set(Calendar.DAY_OF_YEAR, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            "За всё время" -> {
+                calendar.set(1970, Calendar.JANUARY, 1, 0, 0, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            else -> {
+                calendar.set(Calendar.DAY_OF_MONTH, 1)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+        }
+        val startTime = calendar.timeInMillis
+        return Pair(startTime, endTime)
+    }
+
+    private fun getCurrentMonthStartAndEnd(): Pair<Long, Long> {
+        val calendar = Calendar.getInstance()
+        val currentYear = calendar.get(Calendar.YEAR)
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        val startOfMonth = Calendar.getInstance().apply {
+            set(currentYear, currentMonth, 1, 0, 0, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val endOfMonth = Calendar.getInstance().apply {
+            set(currentYear, currentMonth + 1, 1, 0, 0, 0)
+            set(Calendar.MILLISECOND, -1)
+        }.timeInMillis
+
+        return startOfMonth to endOfMonth
     }
 
     private fun observeOperations() {
@@ -136,9 +303,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     }
 
     fun onContinueClicked() {
-        setInitialCategories(_selectedCategories)
-        setFirstLaunch(false)
-        _navigateToNextScreen.value = true
+        viewModelScope.launch {
+            _selectedCategories.forEach { category ->
+                val categoryEntity = CategoryEntity(
+                    name = category.name,
+                    iconType = category.iconType.name,
+                    isIncome = category.isIncome
+                )
+                categoryRepository.insertCategory(categoryEntity)
+            }
+            setFirstLaunch(false)
+            _navigateToNextScreen.value = true
+        }
     }
 
     fun setFirstLaunch(isFirstLaunch: Boolean) {
@@ -155,13 +331,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         _navigateToNextScreen.value = false
     }
 
-    fun addCategory(category: Category) {
-        _categories.value = _categories.value + category
-    }
-
-    fun removeCategory(category: Category) {
-        _categories.value = _categories.value - category
-    }
 
     fun getNotificationAccessPermission() {
         notificationRepository.getNotificationAccessPermission()
@@ -199,7 +368,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         if (matchedKeyword != null) {
             val amount = parseAmountFromNotification(fullText)
             if (amount != null) {
-                val defaultCategory = categories.value.firstOrNull() ?: Category("Help", CategoryIconType.Help)
+                val defaultCategory = categories.value.firstOrNull() ?: Category("Help", CategoryIconType.Help, false)
                 addOperation(defaultCategory, amount)
                 viewModelScope.launch {
                     _notificationText.value += "\nСумма $amount добавлена из уведомления с ключевым словом '$matchedKeyword'"
@@ -247,4 +416,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
+    fun deleteOperationsByIds(operationIds: List<Int>) {
+        viewModelScope.launch {
+            operationRepository.deleteOperationsByIds(operationIds)
+        }
+    }
 }

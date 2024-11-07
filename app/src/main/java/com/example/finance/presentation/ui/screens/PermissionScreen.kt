@@ -8,6 +8,8 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -21,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -37,7 +40,11 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
     val notificationListenerComp = ComponentName(context, NotificationService::class.java)
     val coroutineScope = rememberCoroutineScope()
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text(
             text = "Доступ к уведомлениям",
             style = MaterialTheme.typography.titleMedium
@@ -46,8 +53,12 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
         Text(
             text = "Чтобы приложение могло отслеживать транзакции, ему необходимо разрешение на доступ к уведомлениям."
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Spacer(modifier = Modifier.weight(1f)) // Spacer to push content to the bottom
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Checkbox(
                 checked = dontShowAgain,
                 onCheckedChange = {
@@ -65,7 +76,8 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
                 val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-            }
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Запросить доступ к уведомлениям")
         }

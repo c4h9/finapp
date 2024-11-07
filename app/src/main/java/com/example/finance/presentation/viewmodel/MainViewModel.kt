@@ -38,17 +38,19 @@ private val DONT_SHOW_PERMISSION_SCREEN_KEY = booleanPreferencesKey("dont_show_p
 
 object InitialData {
     val allCategories = listOf(
+        //Расходы
         Category("Еда", CategoryIconType.Fastfood, false),
-        Category("Транспорт", CategoryIconType.Fastfood, false),
+        Category("Транспорт", CategoryIconType.DirectionsCar, false),
         Category("Дом", CategoryIconType.Home, false),
-        Category("Работа", CategoryIconType.Work, false),
         Category("Спорт", CategoryIconType.FitnessCenter, false),
         Category("Покупки", CategoryIconType.ShoppingCart, false),
         Category("Развлечения", CategoryIconType.Movie, false),
-        Category("Зарплата", CategoryIconType.Fastfood, true),
-        Category("Подработка", CategoryIconType.Fastfood, true),
-        Category("Депозит", CategoryIconType.Home, true),
-        Category("Стипендия", CategoryIconType.Work, true)
+        Category("Здоровье", CategoryIconType.Health, false),
+        //Доходы
+        Category("Зарплата", CategoryIconType.Salary, true),
+        Category("Подработка", CategoryIconType.Underworking, true),
+        Category("Депозит", CategoryIconType.Deposit, true),
+        Category("Стипендия", CategoryIconType.Scholarship, true)
     )
 }
 

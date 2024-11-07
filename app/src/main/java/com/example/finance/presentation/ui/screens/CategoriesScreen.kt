@@ -63,37 +63,6 @@ val sampleCategories = listOf(
     Category("Transport", CategoryIconType.Pets, false)
 )
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewCategoriesScreen() {
-//    MaterialTheme {
-//        Surface(modifier = Modifier.fillMaxSize()) {
-//            CategoriesScreen(
-//                categories = sampleCategories,
-//                onConfirmAddAmountBottomSheetContent = { _, _ -> },
-//                addCategory = { _, _ -> },
-//                budget = 1000.0,
-//                outcomes = 300.0,
-//                incomes = 500.0
-//            )
-//        }
-//    }
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewCategoryItem() {
-//    MaterialTheme {
-//        Surface {
-//            CategoryItem(
-//                category = Category("Sample", CategoryIconType.Home, false),
-//                onClick = {},
-//                155.0
-//            )
-//        }
-//    }
-//}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
@@ -301,7 +270,7 @@ fun CategoryItem(
 
         if (amount != null) {
             Text(
-                text = amount.toString() + " ₽",
+                text = roundUpToTwoDecimalPlaces(amount).toString() + " ₽",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (amount != 0.0) FontWeight.Bold else FontWeight.Normal
                 ),
@@ -540,7 +509,7 @@ fun BudgetCard(modifier: Modifier, onClickBudgetCard: () -> Unit, budget: Double
                     modifier = Modifier.weight(0.7f)
                 )
                 Text(
-                    text = budget.toString(),
+                    text = roundUpToTwoDecimalPlaces(budget).toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
@@ -558,7 +527,7 @@ fun BudgetCard(modifier: Modifier, onClickBudgetCard: () -> Unit, budget: Double
                     modifier = Modifier.weight(0.7f)
                 )
                 Text(
-                    text = outcomes.toString(),
+                    text = roundUpToTwoDecimalPlaces(outcomes).toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.weight(1f),
@@ -653,3 +622,8 @@ fun AddCategoryBottomSheetContent(
         }
     }
 }
+
+fun roundUpToTwoDecimalPlaces(value: Double): Double {
+    return kotlin.math.ceil(value * 100) / 100
+}
+

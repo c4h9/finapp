@@ -39,7 +39,7 @@ interface OperationDao {
 
     @Query("""
     SELECT categoryName, SUM(amount) as total FROM operations 
-    WHERE categoryName IN (SELECT name FROM categories WHERE isIncome = 0) 
+    WHERE categoryName IN (SELECT name FROM categories) 
     AND timestamp BETWEEN :startTime AND :endTime 
     GROUP BY categoryName
         """)

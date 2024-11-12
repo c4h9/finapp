@@ -349,7 +349,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
             val operation = OperationEntity(
                 categoryName = category.name,
                 iconName = category.iconType.name,
-                amount = amount
+                amount = amount,
+                sourceName = "Карта"
             )
             operationRepository.insertOperation(operation)
         }

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.finance.data.entity.OperationEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -44,5 +45,9 @@ interface OperationDao {
     GROUP BY categoryName
         """)
     fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>>
+
+    @Update
+    suspend fun updateOperation(operation: OperationEntity)
+
 }
 

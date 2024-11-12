@@ -30,5 +30,9 @@ class OperationRepositoryImpl(private val operationDao: OperationDao) : Operatio
     override fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>> {
         return operationDao.getSumsPerCategoryForPeriod(startTime, endTime)
     }
+
+    override suspend fun updateOperation(operation: OperationEntity) {
+        operationDao.updateOperation(operation)
+    }
 }
 

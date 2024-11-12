@@ -1,6 +1,8 @@
 package com.example.finance.presentation.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
@@ -22,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,44 +33,49 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.finance.data.entity.OperationEntity
+import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewOperationsScreen() {
-    val sampleOperations = listOf(
-        OperationEntity(id = 1, categoryName = "Food", amount = 20.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "FoodIcon"),
-        OperationEntity(id = 2, categoryName = "Transport", amount = 15.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "TransportIcon"),
-        OperationEntity(id = 3, categoryName = "Entertainment", amount = 50.0, sourceName = "Наличные", timestamp = System.currentTimeMillis(), iconName = "EntertainmentIcon")
-    )
-
-    OperationsScreen(
-        operations = sampleOperations,
-        onDeleteOperations = { selectedIds ->
-            println("Deleted operations with IDs: $selectedIds")
-        }
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewOperationsScreen() {
+//    val sampleOperations = listOf(
+//        OperationEntity(id = 1, categoryName = "Food", amount = 20.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "FoodIcon"),
+//        OperationEntity(id = 2, categoryName = "Transport", amount = 15.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "TransportIcon"),
+//        OperationEntity(id = 3, categoryName = "Entertainment", amount = 50.0, sourceName = "Наличные", timestamp = System.currentTimeMillis(), iconName = "EntertainmentIcon")
+//    )
+//
+//    OperationsScreen(
+//        operations = sampleOperations,
+//        onDeleteOperations = {},
+//        onEditConfirm = { -> }
+//    )
+//}
 
 @Composable
 fun OperationsScreen(
+    categoriesValue: List<Category>,
     operations: List<OperationEntity>,
-    onDeleteOperations: (List<Int>) -> Unit
+    onDeleteOperations: (List<Int>) -> Unit,
+    onEditConfirm: (OperationEntity) -> Unit,
 ) {
-    var showButton by remember { mutableStateOf(false) }
-    val selectedOperations = remember { mutableStateOf(mutableSetOf<Int>()) }
-    var selectionMode by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
+    var showButton by rememberSaveable { mutableStateOf(false) }
+    var selectionMode by rememberSaveable { mutableStateOf(false) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
     var dialogOperation by remember { mutableStateOf<OperationEntity?>(null) }
+    val selectedOperations = remember { mutableStateOf(mutableSetOf<Int>()) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -90,6 +99,10 @@ fun OperationsScreen(
                             showDialog = true
                         } else {
                             toggleSelection(operation.id, selectedOperations)
+                            if (selectedOperations.value.isEmpty()) {
+                                selectionMode = false
+                                showButton = false
+                            }
                         }
                     }
                 )
@@ -113,20 +126,13 @@ fun OperationsScreen(
         }
 
         if (showDialog && dialogOperation != null) {
-            AlertDialog(
+            EditOperationDialog(
+                operation = dialogOperation!!,
+                categories = categoriesValue,
                 onDismissRequest = { showDialog = false },
-                title = { Text(text = "Operation Details") },
-                text = {
-                    Column {
-                        Text(text = "Category: ${dialogOperation?.categoryName}")
-                        Text(text = "Source: ${dialogOperation?.sourceName}")
-                        Text(text = "Amount: ${dialogOperation?.amount}")
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("OK")
-                    }
+                onConfirm = {
+                    onEditConfirm(it)
+                    showDialog = false
                 }
             )
         }
@@ -216,3 +222,108 @@ fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+
+@Composable
+fun EditOperationDialog(
+    operation: OperationEntity,
+    categories: List<Category>,
+    onDismissRequest: () -> Unit,
+    onConfirm: (OperationEntity) -> Unit
+) {
+    var editedAmount by remember { mutableStateOf(operation.amount.toString()) }
+    var selectedCategory by remember { mutableStateOf(operation.categoryName) }
+    var selectedSourceName by remember { mutableStateOf(operation.sourceName) }
+    var selectedDate by remember { mutableStateOf(operation.timestamp) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Редактировать операцию") },
+        text = {
+            Column {
+                DatePicker(
+                    timestamp = selectedDate,
+                    onDateSelected = { selectedDate = it }
+                )
+                OutlinedTextField(
+                    label = { Text("Сумма") },
+                    value = editedAmount,
+                    onValueChange = { editedAmount = it },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                CategoryDropdown(
+                    categories = categories,
+                    selectedCategory = categories.first { it.name == selectedCategory },
+                    onCategorySelected = { selectedCategory = it.name }
+                )
+                OutlinedTextField(
+                    label = { Text("Счёт") },
+                    value = selectedSourceName,
+                    onValueChange = { selectedSourceName = it }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val amount = editedAmount.toDoubleOrNull()
+                if (amount != null) {
+                    val updatedOperation = operation.copy(
+                        amount = amount,
+                        categoryName = selectedCategory,
+                        sourceName = selectedSourceName,
+                        timestamp = selectedDate
+                    )
+                    onConfirm(updatedOperation)
+                } else {
+                }
+            }) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+
+
+@Composable
+fun DatePicker(
+    timestamp: Long,
+    onDateSelected: (Long) -> Unit
+) {
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = timestamp
+    }
+    val dateFormatter = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    val dateText = dateFormatter.format(Date(timestamp))
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val selectedCalendar = Calendar.getInstance().apply {
+                set(year, month, dayOfMonth)
+            }
+            onDateSelected(selectedCalendar.timeInMillis)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    OutlinedTextField(
+        label = { Text("Дата") },
+        value = dateText,
+        onValueChange = {},
+        readOnly = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                datePickerDialog.show()
+            }
+    )
+}
+
+
+

@@ -20,16 +20,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -366,6 +364,7 @@ fun AddAmountBottomSheetContent(
 
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryDropdown(
     categories: List<Category>,
@@ -374,34 +373,40 @@ fun CategoryDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = selectedCategory.name,
-        onValueChange = {},
-        label = { Text("Категория") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true },
-        readOnly = true,
-        trailingIcon = {
-            Icon(
-                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                contentDescription = null
-            )
-        }
-    )
-
-    DropdownMenu(
+    ExposedDropdownMenuBox(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onExpandedChange = {
+            expanded = !expanded
+        }
     ) {
-        categories.forEach { category ->
-            DropdownMenuItem(
-                text = { Text(category.name) },
-                onClick = {
-                    onCategorySelected(category)
-                    expanded = false
-                }
-            )
+        OutlinedTextField(
+            value = selectedCategory.name,
+            onValueChange = {},
+            label = { Text("Категория") },
+            readOnly = true,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = expanded
+                )
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.name) },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }

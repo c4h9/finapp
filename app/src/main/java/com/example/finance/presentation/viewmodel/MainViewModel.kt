@@ -326,6 +326,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
+    fun addOperation(category: Category, amount: Double, sourceName: String) {
+        viewModelScope.launch {
+            val operation = OperationEntity(
+                categoryName = category.name,
+                iconName = category.iconType.name,
+                amount = amount,
+                sourceName = sourceName
+            )
+            operationRepository.insertOperation(operation)
+        }
+    }
+
+    fun updateOperation(operation: OperationEntity) {
+        viewModelScope.launch {
+            operationRepository.updateOperation(operation)
+        }
+    }
+
 
     fun onNavigatedToNextScreen() {
         _navigateToNextScreen.value = false
@@ -344,18 +362,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         notificationRepository.removeNotificationListener()
     }
 
-    fun addOperation(category: Category, amount: Double) {
-        viewModelScope.launch {
-            val operation = OperationEntity(
-                categoryName = category.name,
-                iconName = category.iconType.name,
-                amount = amount,
-                sourceName = "Карта"
-            )
-            operationRepository.insertOperation(operation)
-        }
-    }
-
 
     override fun onNotificationReceived(notificationInfo: NotificationInfo) {
         val notificationText = notificationInfo.text ?: ""
@@ -370,7 +376,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
             val amount = parseAmountFromNotification(fullText)
             if (amount != null) {
                 val defaultCategory = categories.value.firstOrNull() ?: Category("Help", CategoryIconType.Help, false)
-                addOperation(defaultCategory, amount)
+                addOperation(defaultCategory, amount, "")
                 viewModelScope.launch {
                     _notificationText.value += "\nСумма $amount добавлена из уведомления с ключевым словом '$matchedKeyword'"
                 }

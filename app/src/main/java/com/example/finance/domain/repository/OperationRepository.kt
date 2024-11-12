@@ -11,5 +11,6 @@ interface OperationRepository {
     fun getOutcomeSumForPeriod(startTime: Long, endTime: Long): Flow<Double?>
     suspend fun deleteOperationsByIds(operationIds: List<Int>)
     fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>>
+    suspend fun updateOperation(operation: OperationEntity)
 }
 

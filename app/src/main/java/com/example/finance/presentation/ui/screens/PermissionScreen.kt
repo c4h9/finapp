@@ -1,10 +1,9 @@
+// PermissionScreen.kt
 package com.example.finance.presentation.ui.screens
 
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,16 +27,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.finance.data.service.NotificationService
-import com.example.finance.presentation.viewmodel.MainViewModel
-import kotlinx.coroutines.launch
 
 @Composable
-fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onPermissionGranted: () -> Unit) {
+fun PermissionScreen(
+    navController: NavController,
+    onDontShowAgainChanged: (Boolean) -> Unit,
+    onRequestNotificationAccess: () -> Unit,
+    onPermissionGranted: () -> Unit
+) {
     val context = LocalContext.current
     var dontShowAgain by remember { mutableStateOf(false) }
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val notificationListenerComp = ComponentName(context, NotificationService::class.java)
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -53,7 +53,7 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
         Text(
             text = "Чтобы приложение могло отслеживать транзакции, ему необходимо разрешение на доступ к уведомлениям."
         )
-        Spacer(modifier = Modifier.weight(1f)) // Spacer to push content to the bottom
+        Spacer(modifier = Modifier.weight(1f))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -63,20 +63,14 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
                 checked = dontShowAgain,
                 onCheckedChange = {
                     dontShowAgain = it
-                    coroutineScope.launch {
-                        viewModel.setDontShowPermissionScreen(it)
-                    }
+                    onDontShowAgainChanged(it)
                 }
             )
             Text(text = "Больше не показывать")
         }
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = {
-                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-            },
+            onClick = onRequestNotificationAccess,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Запросить доступ к уведомлениям")
@@ -86,9 +80,7 @@ fun PermissionScreen(navController: NavController, viewModel: MainViewModel, onP
     val hasNotificationAccess = notificationManager.isNotificationListenerAccessGranted(notificationListenerComp)
     LaunchedEffect(hasNotificationAccess) {
         if (hasNotificationAccess) {
-            navController.navigate("categories") {
-                popUpTo("permission") { inclusive = true }
-            }
+            onPermissionGranted()
         }
     }
 }

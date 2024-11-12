@@ -1,8 +1,12 @@
+// NavigationGraph.kt
 package com.example.finance.presentation.ui
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,6 +17,7 @@ import com.example.finance.presentation.ui.screens.OperationsScreen
 import com.example.finance.presentation.ui.screens.PermissionScreen
 import com.example.finance.presentation.ui.screens.SettingsScreen
 import com.example.finance.presentation.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun NavigationGraph(
@@ -21,13 +26,13 @@ fun NavigationGraph(
     notificationTextValue: String,
     onGetNotificationAccess: () -> Unit
 ) {
-    //CategoriesScreen
+    // CategoriesScreen
     val categories by viewModel.categories.collectAsState()
     val budget by viewModel.budget.collectAsState()
     val incomes by viewModel.incomesForCurrentMonth.collectAsState()
     val outcomes by viewModel.outcomesForCurrentMonth.collectAsState()
 
-    //PermissionScreen
+    // PermissionScreen
     val allCategories = viewModel.allCategories
     val selectedCategories = viewModel.selectedCategories
     val navigateToNextScreen by viewModel.navigateToNextScreen.collectAsState()
@@ -39,8 +44,6 @@ fun NavigationGraph(
     } else {
         Screen.Categories.route
     }
-
-    //FirstLaunchScreen
 
     NavHost(
         navController = navController,
@@ -59,7 +62,7 @@ fun NavigationGraph(
                 allCategories,
                 selectedCategories,
                 navigateToNextScreen,
-                onUpdateBudget = { value -> viewModel.setBudget(value)},
+                onUpdateBudget = { value -> viewModel.setBudget(value) },
                 budget
             )
         }
@@ -77,8 +80,11 @@ fun NavigationGraph(
         composable(Screen.Operations.route) {
             OperationsScreen(
                 operations = viewModel.operations.collectAsState().value,
-                categories = viewModel.categories.collectAsState().value,
-                viewModel = viewModel
+                onDeleteOperations = { operationIds ->
+                    viewModel.viewModelScope.launch {
+                        viewModel.deleteOperationsByIds(operationIds)
+                    }
+                }
             )
         }
 
@@ -92,12 +98,23 @@ fun NavigationGraph(
         composable(Screen.Permission.route) {
             PermissionScreen(
                 navController = navController,
-                viewModel = viewModel,
+                onDontShowAgainChanged = { dontShowAgain ->
+                    viewModel.viewModelScope.launch {
+                        viewModel.setDontShowPermissionScreen(dontShowAgain)
+                    }
+                },
+                onRequestNotificationAccess = {
+                    val context = navController.context
+                    val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                },
                 onPermissionGranted = {
-                    onGetNotificationAccess()
+                    navController.navigate("categories") {
+                        popUpTo("permission") { inclusive = true }
+                    }
                 }
             )
         }
     }
 }
-

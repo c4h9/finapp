@@ -32,9 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.example.finance.data.entity.OperationEntity
-import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
-import com.example.finance.presentation.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,8 +40,7 @@ import java.util.Locale
 @Composable
 fun OperationsScreen(
     operations: List<OperationEntity>,
-    categories: List<Category>,
-    viewModel: MainViewModel
+    onDeleteOperations: (List<Int>) -> Unit
 ) {
     var showButton by remember { mutableStateOf(false) }
     val selectedOperations = remember { mutableStateOf(mutableSetOf<Int>()) }
@@ -77,7 +74,7 @@ fun OperationsScreen(
         if (showButton && selectedOperations.value.isNotEmpty()) {
             FloatingActionButton(
                 onClick = {
-                    viewModel.deleteOperationsByIds(selectedOperations.value.toList())
+                    onDeleteOperations(selectedOperations.value.toList())
                     selectedOperations.value.clear()
                     showButton = false
                 },
@@ -163,7 +160,7 @@ fun getCategoryIconByName(iconName: String): CategoryIconType {
     return try {
         CategoryIconType.valueOf(iconName)
     } catch (e: IllegalArgumentException) {
-        CategoryIconType.Help // Возвращаем иконку по умолчанию
+        CategoryIconType.Help
     }
 }
 

@@ -181,6 +181,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
             categoryRepository.insertCategory(categoryEntity)
         }
     }
+
+    fun deleteCategory(category: String) {
+        viewModelScope.launch {
+            categoryRepository.deleteCategory(category)
+            operationRepository.deleteOperationsByCategoryName(category)
+        }
+    }
     private fun observeIncomesAndOutcomes() {
         viewModelScope.launch {
             val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()

@@ -6,6 +6,6 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "budget")
 data class BudgetEntity(
     @PrimaryKey
-    val id: Int = 0, // Use a fixed ID since we only need one budget
+    val id: Int = 0,
     val value: Double
 )

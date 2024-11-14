@@ -38,6 +38,9 @@ interface OperationDao {
     @Query("DELETE FROM operations WHERE id IN (:operationIds)")
     suspend fun deleteOperationsByIds(operationIds: List<Int>)
 
+    @Query("DELETE FROM operations WHERE categoryName IN (:categoryName)")
+    suspend fun deleteOperationsByCategoryName(categoryName: String)
+
     @Query("""
     SELECT categoryName, SUM(amount) as total FROM operations 
     WHERE categoryName IN (SELECT name FROM categories) 

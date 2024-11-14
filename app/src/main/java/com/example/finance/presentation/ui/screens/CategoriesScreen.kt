@@ -1,7 +1,9 @@
 package com.example.finance.presentation.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +23,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -37,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,6 +76,7 @@ val sampleCategories = listOf(
 fun CategoriesScreen(
     categories: List<Category>,
     onConfirmAddAmountBottomSheetContent: (Category, Double) -> Unit,
+    onDeleteCategory: (String) -> Unit,
     addCategory: (Category, Boolean) -> Unit,
     budget: Double,
     outcomes: Double,
@@ -103,6 +109,7 @@ fun CategoriesScreen(
                 openAddAmountBottomSheet = true
                 coroutineScope.launch { amountBottomSheetState.show() }
             },
+            onDeleteCategory = onDeleteCategory,
             showInCome,
             toggleShowInCome = { showInCome = !showInCome },
             budget = budget,
@@ -170,6 +177,7 @@ fun CategoriesGrid(
     categories: List<Category>,
     onAddCategoryClick: () -> Unit,
     onCategoryClick: (Category) -> Unit,
+    onDeleteCategory: (String) -> Unit,
     showIncome: Boolean,
     toggleShowInCome: () -> Unit,
     budget: Double,
@@ -219,6 +227,9 @@ fun CategoriesGrid(
                                 onCategoryClick(category)
                             }
                         },
+                        onLongClick = {if (category.name != "Добавить") {
+                            onDeleteCategory(category.name)
+                        }},
                         amount = if (category.name == "Добавить") null else categorySums[category.name] ?: 0.0
                     )
                 }
@@ -227,14 +238,17 @@ fun CategoriesGrid(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryItem(
     category: Category,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     amount: Double? = 0.0
 ) {
     val iconSize = 60.dp
     val itemWidth = 75.dp
+    val showDialog = remember { mutableStateOf(false) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -256,7 +270,16 @@ fun CategoryItem(
         Card(
             modifier = Modifier
                 .size(iconSize)
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    interactionSource = MutableInteractionSource(),
+                    indication = ripple(),
+                    onClick = {
+                        onClick()
+                    },
+                    onLongClick = {
+                        showDialog.value = true
+                    }
+                ),
             elevation = CardDefaults.cardElevation(4.dp),
             shape = CircleShape
         ) {
@@ -288,10 +311,49 @@ fun CategoryItem(
                     .heightIn(max = 40.dp)
             )
         }
+        if (showDialog.value) {
+            ConfirmDelete(
+                onConfirm = {
+                    onLongClick()
+                    showDialog.value = false
+                },
+                onDismiss = {
+                    showDialog.value = false
+                }
+            )
+        }
     }
 }
 
-
+@Composable
+fun ConfirmDelete(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Подтверждение")
+        },
+        text = {
+            Text("Удалить категорию и связанные с ней операции?")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm
+            ) {
+                Text("Подтвердить")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss
+            ) {
+                Text("Отмена")
+            }
+        }
+    )
+}
 
 @Composable
 fun AddAmountBottomSheetContent(

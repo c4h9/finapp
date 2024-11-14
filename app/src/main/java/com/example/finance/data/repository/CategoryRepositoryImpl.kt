@@ -13,4 +13,10 @@ class CategoryRepositoryImpl(private val categoryDao: CategoryDao) : CategoryRep
     override fun getAllCategories(): Flow<List<CategoryEntity>> {
         return categoryDao.getAllCategories()
     }
+
+    override suspend fun deleteCategory(categoryName: String) {
+        return categoryDao.deleteCategory(categoryName)
+    }
+
+
 }

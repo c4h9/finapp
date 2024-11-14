@@ -75,6 +75,7 @@ fun NavigationGraph(
                 categories = categories,
                 addCategory = { newCategory, isIncome -> viewModel.addCategory(newCategory, isIncome) },
                 onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount, "") },
+                onDeleteCategory = { categoryName -> viewModel.deleteCategory(categoryName) },
                 budget = budget,
                 outcomes = outcomes,
                 incomes = incomes,

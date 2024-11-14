@@ -1,6 +1,7 @@
 package com.example.finance.presentation.ui.screens
 
 import android.app.DatePickerDialog
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -48,21 +49,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewOperationsScreen() {
-//    val sampleOperations = listOf(
-//        OperationEntity(id = 1, categoryName = "Food", amount = 20.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "FoodIcon"),
-//        OperationEntity(id = 2, categoryName = "Transport", amount = 15.0, sourceName = "Карта", timestamp = System.currentTimeMillis(), iconName = "TransportIcon"),
-//        OperationEntity(id = 3, categoryName = "Entertainment", amount = 50.0, sourceName = "Наличные", timestamp = System.currentTimeMillis(), iconName = "EntertainmentIcon")
-//    )
-//
-//    OperationsScreen(
-//        operations = sampleOperations,
-//        onDeleteOperations = {},
-//        onEditConfirm = { -> }
-//    )
-//}
 
 @Composable
 fun OperationsScreen(
@@ -76,6 +62,12 @@ fun OperationsScreen(
     var showDialog by rememberSaveable { mutableStateOf(false) }
     var dialogOperation by remember { mutableStateOf<OperationEntity?>(null) }
     val selectedOperations = remember { mutableStateOf(mutableSetOf<Int>()) }
+
+    BackHandler(enabled = selectionMode) {
+        selectedOperations.value.clear()
+        selectionMode = false
+        showButton = false
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

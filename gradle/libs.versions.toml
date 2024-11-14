@@ -3,6 +3,7 @@ activityComposeVersion = "1.9.3"
 agp = "8.4.1"
 constraintlayoutCompose = "1.1.0"
 converterGson = "2.11.0"
+coreSplashscreen = "1.0.1"
 datastorePreferences = "1.1.1"
 kotlin = "1.9.20"
 coreKtx = "1.13.1"
@@ -38,6 +39,7 @@ uiVersion = "1.7.5"
 androidx-activity-compose-v193 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutCompose" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-material = { module = "androidx.compose.material:material", version.ref = "material" }

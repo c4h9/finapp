@@ -18,7 +18,18 @@ class NotificationService : NotificationListenerService() {
     private var listener: NotificationListener? = null
 
     companion object {
+        var isServiceRunning: Boolean = false
         const val ACTION_BIND_LISTENER = "com.example.finance.BIND_LISTENER"
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        isServiceRunning = true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isServiceRunning = false
     }
 
     override fun onBind(intent: Intent): IBinder? {

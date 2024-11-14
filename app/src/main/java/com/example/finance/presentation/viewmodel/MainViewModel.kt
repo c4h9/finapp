@@ -97,7 +97,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val _operations = MutableStateFlow<List<OperationEntity>>(emptyList())
     val operations: StateFlow<List<OperationEntity>> = _operations.asStateFlow()
 
-    private val keywordsDataStore = KeywordsDataStore(application)
+    private val keywordsDataStore = KeywordsDataStore.getInstance(application)
 
     private val _keywords = MutableStateFlow<List<String>>(listOf("Покупка"))
     val keywords: StateFlow<List<String>> = _keywords.asStateFlow()

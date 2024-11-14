@@ -9,21 +9,32 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-class KeywordsDataStore(private val context: Context) {
+class KeywordsDataStore private constructor(context: Context) {
 
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "keywords_prefs")
+    // Singleton instance of DataStore
+    private val dataStore: DataStore<Preferences> = context.applicationContext.dataStore
 
     companion object {
+        private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "keywords_prefs")
         val KEYWORDS_KEY = stringSetPreferencesKey("keywords")
+
+        @Volatile
+        private var INSTANCE: KeywordsDataStore? = null
+
+        fun getInstance(context: Context): KeywordsDataStore {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: KeywordsDataStore(context).also { INSTANCE = it }
+            }
+        }
     }
 
-    val keywordsFlow: Flow<Set<String>> = context.dataStore.data
+    val keywordsFlow: Flow<Set<String>> = dataStore.data
         .map { preferences ->
             preferences[KEYWORDS_KEY] ?: emptySet()
         }
 
     suspend fun saveKeywords(keywords: Set<String>) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[KEYWORDS_KEY] = keywords
         }
     }

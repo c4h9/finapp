@@ -182,6 +182,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
         }
     }
 
+    fun doesCategoryExist(categoryName: String, callback: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = categoryRepository.doesCategoryExist(categoryName)
+            callback(exists)
+        }
+    }
+
     fun deleteCategory(category: String) {
         viewModelScope.launch {
             categoryRepository.deleteCategory(category)

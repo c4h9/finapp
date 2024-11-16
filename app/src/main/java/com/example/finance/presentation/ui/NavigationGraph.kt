@@ -79,7 +79,11 @@ fun NavigationGraph(
                 budget = budget,
                 outcomes = outcomes,
                 incomes = incomes,
-                categorySums = viewModel.categorySums.collectAsState().value
+                categorySums = viewModel.categorySums.collectAsState().value,
+                toProfileScreen = { navController.navigate("settings") },
+                doesCategoryExist = { categoryName, callback ->
+                    viewModel.doesCategoryExist(categoryName, callback)
+                }
             )
         }
         composable(Screen.Operations.route) {

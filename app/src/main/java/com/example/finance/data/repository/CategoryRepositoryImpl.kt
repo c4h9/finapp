@@ -18,5 +18,8 @@ class CategoryRepositoryImpl(private val categoryDao: CategoryDao) : CategoryRep
         return categoryDao.deleteCategory(categoryName)
     }
 
+    override suspend fun doesCategoryExist(categoryName: String): Boolean {
+        return categoryDao.doesCategoryExist(categoryName) > 0
+    }
 
 }

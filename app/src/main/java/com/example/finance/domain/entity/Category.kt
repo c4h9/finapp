@@ -5,21 +5,33 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.FaceRetouchingNatural
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HomeWork
+import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocalGroceryStore
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Restaurant
@@ -27,6 +39,10 @@ import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Terrain
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.VolunteerActivism
@@ -72,7 +88,7 @@ enum class CategoryIconType(val icon: ImageVector) {
     Investments(Icons.Default.TrendingUp),
     Charity(Icons.Default.VolunteerActivism),
     Miscellaneous(Icons.Default.MoreHoriz),
-    /*    Beauty(Icons.Default.FaceRetouchingNatural),
+    Beauty(Icons.Default.FaceRetouchingNatural),
     Technology(Icons.Default.Computer),
     Transportation(Icons.Default.Train),
     Communication(Icons.Default.Phone),
@@ -90,7 +106,7 @@ enum class CategoryIconType(val icon: ImageVector) {
     PetsCare(Icons.Default.Pets),
     Fitness(Icons.Default.FitnessCenter),
     Outdoor(Icons.Default.Terrain),
-    Finance(Icons.Default.AccountBalanceWallet)*/
+    Finance(Icons.Default.AccountBalanceWallet)
 }
 
 

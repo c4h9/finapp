@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -667,36 +671,23 @@ fun IconSelectionGrid(
     selectedIcon: CategoryIconType,
     onIconSelected: (CategoryIconType) -> Unit
 ) {
-    val columns = 5
-    val rows = if (icons.size % columns == 0) {
-        icons.size / columns
-    } else {
-        icons.size / columns + 1
-    }
-
-    Column {
-        for (row in 0 until rows) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
+    LazyHorizontalGrid(
+        rows = GridCells.Fixed(5),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    ) {
+        items(icons) { iconType ->
+            IconButton(
+                onClick = { onIconSelected(iconType) }
             ) {
-                for (column in 0 until columns) {
-                    val index = row * columns + column
-                    if (index < icons.size) {
-                        val iconType = icons[index]
-                        IconButton(
-                            onClick = { onIconSelected(iconType) }
-                        ) {
-                            Icon(
-                                imageVector = iconType.icon,
-                                contentDescription = null,
-                                tint = if (iconType == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+                Icon(
+                    imageVector = iconType.icon,
+                    contentDescription = null,
+                    tint = if (iconType == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
@@ -789,7 +780,8 @@ fun AddCategoryBottomSheetContent(
     var isError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    val iconOptions = CategoryIconType.values().toList()
+    val iconOptions = CategoryIconType.entries
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
@@ -806,7 +798,7 @@ fun AddCategoryBottomSheetContent(
             value = categoryName,
             onValueChange = {
                 categoryName = it
-                isError = false // Reset error state on input change
+                isError = false
             },
             label = { Text("Название категории") },
             modifier = Modifier.fillMaxWidth(),
@@ -870,6 +862,7 @@ fun AddCategoryBottomSheetContent(
         }
     }
 }
+
 
 
 fun roundUpToTwoDecimalPlaces(value: Double): Double {

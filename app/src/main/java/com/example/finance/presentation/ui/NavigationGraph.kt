@@ -79,6 +79,7 @@ fun NavigationGraph(
                 budget = budget,
                 outcomes = outcomes,
                 incomes = incomes,
+                onPresetRangeClick = { period -> viewModel.setSelectedPeriod(period) },
                 categorySums = viewModel.categorySums.collectAsState().value,
                 toProfileScreen = { navController.navigate("settings") },
                 doesCategoryExist = { categoryName, callback ->
@@ -110,7 +111,6 @@ fun NavigationGraph(
         }
         composable(Screen.Permission.route) {
             PermissionScreen(
-                navController = navController,
                 onDontShowAgainChanged = { dontShowAgain ->
                     viewModel.viewModelScope.launch {
                         viewModel.setDontShowPermissionScreen(dontShowAgain)

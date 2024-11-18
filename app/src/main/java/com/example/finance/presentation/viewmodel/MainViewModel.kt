@@ -28,6 +28,7 @@ import com.example.finance.domain.repository.OperationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -62,11 +63,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
     private val budgetRepository: BudgetRepository
 
     private val _selectedPeriod = MutableStateFlow("Месяц")
-    val selectedPeriod: StateFlow<String> = _selectedPeriod.asStateFlow()
+    var selectedPeriod: StateFlow<String> = _selectedPeriod.asStateFlow()
 
     fun setSelectedPeriod(period: String) {
         _selectedPeriod.value = period
     }
+
 
     private val _categorySums = MutableStateFlow<Map<String, Double>>(emptyMap())
     val categorySums: StateFlow<Map<String, Double>> = _categorySums.asStateFlow()
@@ -136,10 +138,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
 
     private fun observeCategorySums() {
         viewModelScope.launch {
-            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
-            operationRepository.getSumsPerCategoryForPeriod(startOfMonth, endOfMonth).collect { categorySumsList ->
-                val sumsMap = categorySumsList.associate { it.categoryName to it.total }
-                _categorySums.value = sumsMap
+            selectedPeriod.collectLatest { period ->
+                val (startTime, endTime) = getStartAndEndOfPeriod(period)
+                operationRepository.getSumsPerCategoryForPeriod(startTime, endTime).collect { categorySumsList ->
+                    val sumsMap = categorySumsList.associate { it.categoryName to it.total }
+                    _categorySums.value = sumsMap
+                }
             }
         }
     }
@@ -195,23 +199,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
             operationRepository.deleteOperationsByCategoryName(category)
         }
     }
+
     private fun observeIncomesAndOutcomes() {
         viewModelScope.launch {
-            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
-            operationRepository.getIncomeSumForPeriod(startOfMonth, endOfMonth).collect { income ->
-                _incomesForCurrentMonth.value = income ?: 0.0
+            selectedPeriod.collectLatest { period ->
+                val (startTime, endTime) = getStartAndEndOfPeriod(period)
+                operationRepository.getIncomeSumForPeriod(startTime, endTime).collect { income ->
+                    _incomesForCurrentMonth.value = income ?: 0.0
+                }
             }
         }
 
         viewModelScope.launch {
-            val (startOfMonth, endOfMonth) = getCurrentMonthStartAndEnd()
-            operationRepository.getOutcomeSumForPeriod(startOfMonth, endOfMonth).collect { outcome ->
-                _outcomesForCurrentMonth.value = outcome ?: 0.0
+            selectedPeriod.collectLatest { period ->
+                val (startTime, endTime) = getStartAndEndOfPeriod(period)
+                operationRepository.getOutcomeSumForPeriod(startTime, endTime).collect { outcome ->
+                    _outcomesForCurrentMonth.value = outcome ?: 0.0
+                }
             }
         }
     }
 
-    private fun getStartAndEndOfPeriod(period: String): Pair<Long, Long> {
+
+    private fun getStartAndEndOfPeriod(period: String = "Месяц"): Pair<Long, Long> {
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
 
@@ -248,11 +258,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application), N
                 calendar.set(Calendar.MILLISECOND, 0)
             }
             else -> {
-                calendar.set(Calendar.DAY_OF_MONTH, 1)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
+                val parts = period.split("+")
+                if (parts.size == 2) {
+                    val start = parts[0].toLongOrNull()
+                    val end = parts[1].toLongOrNull()
+                    if (start != null && end != null) {
+                        return Pair(start, end)
+                    }
+                }
             }
         }
         val startTime = calendar.timeInMillis

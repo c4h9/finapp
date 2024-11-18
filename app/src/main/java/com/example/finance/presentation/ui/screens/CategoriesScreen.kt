@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditCalendar
@@ -43,6 +44,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -52,8 +56,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -78,6 +85,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
 import kotlinx.coroutines.launch
@@ -85,7 +93,7 @@ import kotlinx.coroutines.launch
 @Preview(showBackground = true)
 @Composable
 fun OverlayWithButtonsPreview() {
-    OverlayWithButtons(onDismiss = {})
+    OverlayWithButtons(onDismiss = {}, onPresetRangeClick = {}, onShowDataPicker = {})
 }
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
@@ -109,7 +117,8 @@ fun CategoriesScreenPreview() {
             "Salary" to 1500.0
         ),
         toProfileScreen = {},
-        doesCategoryExist = {_, _ ->}
+        doesCategoryExist = {_, _ ->},
+        onPresetRangeClick = {}
     )
 }
 
@@ -124,6 +133,7 @@ fun CategoriesScreen(
     budget: Double,
     outcomes: Double,
     incomes: Double,
+    onPresetRangeClick: (String) -> Unit,
     categorySums: Map<String, Double>,
     toProfileScreen: () -> Unit,
     doesCategoryExist: (String, (Boolean) -> Unit) -> Unit
@@ -133,6 +143,7 @@ fun CategoriesScreen(
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var showInCome by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
+    var showDataPicker by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     val bottomSheetState = rememberModalBottomSheetState(
@@ -142,6 +153,10 @@ fun CategoriesScreen(
     val amountBottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
+    val snackState = remember { SnackbarHostState() }
+    SnackbarHost(hostState = snackState, Modifier.zIndex(1f))
+    val state = rememberDateRangePickerState()
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         CategoriesGrid(
@@ -222,7 +237,20 @@ fun CategoriesScreen(
         }
     }
     if (showOverlay) {
-        OverlayWithButtons(onDismiss = { showOverlay = false })
+        OverlayWithButtons(onDismiss = { showOverlay = false }, onPresetRangeClick = onPresetRangeClick, onShowDataPicker = {showDataPicker = true})
+    }
+    if (showDataPicker) {
+        DateRangePickerWithButtons(
+            state = state,
+            onSaveClick = {
+                onPresetRangeClick("${state.selectedStartDateMillis!!}+${state.selectedEndDateMillis!!}")
+                showOverlay = false
+                showDataPicker = false
+            },
+            onDismissClick = {
+                showDataPicker = false
+            }
+        )
     }
 }
 
@@ -252,8 +280,10 @@ fun CategoriesGrid(
     ) {
         item {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween, // Распределение элементов по краям и центру
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
@@ -323,7 +353,7 @@ fun CategoriesGrid(
 }
 
 @Composable
-fun OverlayWithButtons(onDismiss: () -> Unit) {
+fun OverlayWithButtons(onDismiss: () -> Unit, onPresetRangeClick: (String) -> Unit, onShowDataPicker: (String) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -336,41 +366,54 @@ fun OverlayWithButtons(onDismiss: () -> Unit) {
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
-                modifier = Modifier.height(380.dp).width(250.dp).pointerInput(Unit) {
-                    // Пустой обработчик, чтобы Card не реагировал на клики
-                    detectTapGestures {}
-                }
+                modifier = Modifier
+                    .height(380.dp)
+                    .width(250.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures {} // Пустой обработчик, чтобы Card не реагировал на клики
+                    }
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Column(verticalArrangement = Arrangement.SpaceEvenly,
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxHeight()) {
                         IconButtonWithLabel(
-                        icon = Icons.Default.Today,
-                        label = "День"
+                            icon = Icons.Default.Today,
+                            label = "День",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
                         )
                         IconButtonWithLabel(
                             icon = Icons.Default.CalendarMonth,
-                            label = "Месяц"
+                            label = "Месяц",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
                         )
                         IconButtonWithLabel(
                             icon = Icons.Default.AllInclusive,
-                            label = "За всё время"
+                            label = "За всё время",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
                         )
 
                     }
                     Column(verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxHeight()) {
                         IconButtonWithLabel(
                             icon = Icons.Default.DateRange,
-                            label = "Неделя"
+                            label = "Неделя",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
                         )
                         IconButtonWithLabel(
                             icon = Icons.Default.CalendarToday,
-                            label = "Год"
+                            label = "Год",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
                         )
                         IconButtonWithLabel(
                             icon = Icons.Default.EditCalendar,
-                            label = "За период"
+                            label = "За период",
+                            onClick = onShowDataPicker
                         )
 
                     }
@@ -381,14 +424,17 @@ fun OverlayWithButtons(onDismiss: () -> Unit) {
 }
 
 @Composable
-fun IconButtonWithLabel(icon: ImageVector, label: String) {
+fun IconButtonWithLabel(icon: ImageVector, label: String, onClick: (String) -> Unit, onDismiss: (() -> Unit)? = null) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Card(
             shape = CircleShape,
             modifier = Modifier.padding(bottom = 5.dp)
         ) {
             IconButton(
-                onClick = { /* Handle button click */ },
+                onClick = {
+                    onClick(label)
+                    onDismiss?.invoke()
+                },
                 modifier = Modifier
                     .size(70.dp)
                     .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
@@ -863,7 +909,37 @@ fun AddCategoryBottomSheetContent(
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateRangePickerWithButtons(
+    state: DateRangePickerState,
+    onSaveClick: () -> Unit,
+    onDismissClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DatePickerDefaults.colors().containerColor)
+                .padding(start = 12.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onDismissClick) {
+                Icon(Icons.Filled.Close, contentDescription = "Localized description")
+            }
+            TextButton(
+                onClick = onSaveClick,
+                enabled = state.selectedEndDateMillis != null
+            ) {
+                Text(text = "Save")
+            }
+        }
+        DateRangePicker(state = state, modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.Start))
+    }
+}
 
 fun roundUpToTwoDecimalPlaces(value: Double): Double {
     return kotlin.math.ceil(value * 100) / 100

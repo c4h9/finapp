@@ -25,12 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.finance.data.service.NotificationService
 
 @Composable
 fun PermissionScreen(
-    navController: NavController,
     onDontShowAgainChanged: (Boolean) -> Unit,
     onRequestNotificationAccess: () -> Unit,
     onPermissionGranted: () -> Unit

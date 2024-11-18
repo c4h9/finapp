@@ -75,7 +75,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -141,6 +140,7 @@ fun CategoriesScreen(
     var openAddCategoryBottomSheet by remember { mutableStateOf(false) }
     var openAddAmountBottomSheet by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    var selectedPeriod by remember { mutableStateOf("Месяц") }
     var showInCome by remember { mutableStateOf(false) }
     var showOverlay by remember { mutableStateOf(false) }
     var showDataPicker by remember { mutableStateOf(false) }
@@ -178,7 +178,8 @@ fun CategoriesScreen(
             incomes = incomes,
             categorySums = categorySums,
             onShowOverlay = { showOverlay = true },
-            toProfileScreen = toProfileScreen
+            toProfileScreen = toProfileScreen,
+            selectedPeriod = selectedPeriod
         )
 
         if (openAddAmountBottomSheet && selectedCategory != null) {
@@ -237,7 +238,17 @@ fun CategoriesScreen(
         }
     }
     if (showOverlay) {
-        OverlayWithButtons(onDismiss = { showOverlay = false }, onPresetRangeClick = onPresetRangeClick, onShowDataPicker = {showDataPicker = true})
+        OverlayWithButtons(
+            onDismiss = { showOverlay = false },
+            onPresetRangeClick = { label ->
+                selectedPeriod = label
+                onPresetRangeClick(label)
+            },
+            onShowDataPicker = {
+                showDataPicker = true
+                selectedPeriod = "За период"
+            }
+        )
     }
     if (showDataPicker) {
         DateRangePickerWithButtons(
@@ -269,9 +280,9 @@ fun CategoriesGrid(
     incomes: Double,
     categorySums: Map<String, Double>,
     onShowOverlay: () -> Unit,
-    toProfileScreen: () -> Unit
+    toProfileScreen: () -> Unit,
+    selectedPeriod: String
 ) {
-    var selectedPeriod by remember { mutableStateOf("Месяц") }
     val incomeItems: List<Category> = categories.filter { it.isIncome } + Category("Добавить", CategoryIconType.Add, true)
     val outcomeItems: List<Category> = categories.filter { !it.isIncome } + Category("Добавить", CategoryIconType.Add, false)
 
@@ -295,12 +306,13 @@ fun CategoriesGrid(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profile",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 Button(
-                    onClick = { onShowOverlay() }
-                ) { Text("Период") }
+                    onClick = { onShowOverlay() },
+                    modifier = Modifier.height(48.dp)
+                ) { Text(selectedPeriod) }
                 IconButton(
                     onClick = { /* Handle right button click */ },
                     modifier = Modifier
@@ -310,7 +322,7 @@ fun CategoriesGrid(
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit category grid",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }

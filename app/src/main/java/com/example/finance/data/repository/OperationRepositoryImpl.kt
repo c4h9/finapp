@@ -27,8 +27,16 @@ class OperationRepositoryImpl(private val operationDao: OperationDao) : Operatio
         operationDao.deleteOperationsByIds(operationIds)
     }
 
+    override suspend fun deleteOperationsByCategoryName(categoryName: String) {
+        operationDao.deleteOperationsByCategoryName(categoryName)
+    }
+
     override fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>> {
         return operationDao.getSumsPerCategoryForPeriod(startTime, endTime)
+    }
+
+    override suspend fun updateOperation(operation: OperationEntity) {
+        operationDao.updateOperation(operation)
     }
 }
 

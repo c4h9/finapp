@@ -10,5 +10,6 @@ data class OperationEntity(
     val categoryName: String,
     val iconName: String,
     val amount: Double,
+    val sourceName: String,
     val timestamp: Long = System.currentTimeMillis()
 )

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.finance.data.entity.OperationEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -37,6 +38,9 @@ interface OperationDao {
     @Query("DELETE FROM operations WHERE id IN (:operationIds)")
     suspend fun deleteOperationsByIds(operationIds: List<Int>)
 
+    @Query("DELETE FROM operations WHERE categoryName IN (:categoryName)")
+    suspend fun deleteOperationsByCategoryName(categoryName: String)
+
     @Query("""
     SELECT categoryName, SUM(amount) as total FROM operations 
     WHERE categoryName IN (SELECT name FROM categories) 
@@ -44,5 +48,9 @@ interface OperationDao {
     GROUP BY categoryName
         """)
     fun getSumsPerCategoryForPeriod(startTime: Long, endTime: Long): Flow<List<CategorySum>>
+
+    @Update
+    suspend fun updateOperation(operation: OperationEntity)
+
 }
 

@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace 'com.example.finance'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.finance"
@@ -56,6 +56,7 @@ dependencies {
     implementation libs.androidx.ui.graphics
     implementation libs.androidx.ui.tooling.preview
     implementation libs.androidx.material3
+    implementation(libs.androidx.material3.android)
 
     // Compose
     implementation libs.ui
@@ -91,7 +92,7 @@ dependencies {
 
     // Lifecycle ViewModel Compose
     implementation libs.androidx.lifecycle.viewmodel.compose
-    
+
     // Для работы с датой и временем
     implementation libs.kotlinx.datetime
 
@@ -100,7 +101,10 @@ dependencies {
 
     //Сериализация
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.constraintlayout.compose)
 
+    //Splash API
+    implementation libs.androidx.core.splashscreen
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

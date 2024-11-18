@@ -14,4 +14,10 @@ interface CategoryDao {
 
     @Query("SELECT * FROM categories")
     fun getAllCategories(): Flow<List<CategoryEntity>>
+
+    @Query("DELETE FROM categories WHERE Name IN (:categoryName)")
+    suspend fun deleteCategory(categoryName: String)
+
+    @Query("SELECT COUNT(*) FROM categories WHERE name = :categoryName")
+    suspend fun doesCategoryExist(categoryName: String): Int
 }

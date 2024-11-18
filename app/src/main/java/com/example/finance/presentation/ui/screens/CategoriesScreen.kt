@@ -1,7 +1,11 @@
 package com.example.finance.presentation.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,36 +13,58 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Today
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DateRangePickerState
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,37 +73,77 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.finance.domain.entity.Category
 import com.example.finance.domain.entity.CategoryIconType
 import kotlinx.coroutines.launch
 
+@Preview(showBackground = true)
+@Composable
+fun OverlayWithButtonsPreview() {
+    OverlayWithButtons(onDismiss = {}, onPresetRangeClick = {}, onShowDataPicker = {})
+}
 
-val sampleCategories = listOf(
-    Category("Food", CategoryIconType.Home, false),
-    Category("Salary", CategoryIconType.Salary, true),
-    Category("Transport", CategoryIconType.Pets, false)
-)
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Composable
+fun CategoriesScreenPreview() {
+    CategoriesScreen(
+        categories = listOf(
+            Category("Food", CategoryIconType.Home, false),
+            Category("Salary", CategoryIconType.Salary, true),
+            Category("Transport", CategoryIconType.Pets, false)
+        ),
+        onConfirmAddAmountBottomSheetContent = { _, _ -> },
+        onDeleteCategory = { },
+        addCategory = { _, _ -> },
+        budget = 1000.0,
+        outcomes = 500.0,
+        incomes = 1500.0,
+        categorySums = mapOf(
+            "Food" to 200.0,
+            "Transport" to 100.0,
+            "Salary" to 1500.0
+        ),
+        toProfileScreen = {},
+        doesCategoryExist = {_, _ ->},
+        onPresetRangeClick = {}
+    )
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
     categories: List<Category>,
     onConfirmAddAmountBottomSheetContent: (Category, Double) -> Unit,
+    onDeleteCategory: (String) -> Unit,
     addCategory: (Category, Boolean) -> Unit,
     budget: Double,
     outcomes: Double,
     incomes: Double,
-    categorySums: Map<String, Double>
+    onPresetRangeClick: (String) -> Unit,
+    categorySums: Map<String, Double>,
+    toProfileScreen: () -> Unit,
+    doesCategoryExist: (String, (Boolean) -> Unit) -> Unit
 ) {
     var openAddCategoryBottomSheet by remember { mutableStateOf(false) }
     var openAddAmountBottomSheet by remember { mutableStateOf(false) }
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    var selectedPeriod by remember { mutableStateOf("Месяц") }
     var showInCome by remember { mutableStateOf(false) }
+    var showOverlay by remember { mutableStateOf(false) }
+    var showDataPicker by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     val bottomSheetState = rememberModalBottomSheetState(
@@ -87,6 +153,10 @@ fun CategoriesScreen(
     val amountBottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
+    val snackState = remember { SnackbarHostState() }
+    SnackbarHost(hostState = snackState, Modifier.zIndex(1f))
+    val state = rememberDateRangePickerState()
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         CategoriesGrid(
@@ -100,12 +170,16 @@ fun CategoriesScreen(
                 openAddAmountBottomSheet = true
                 coroutineScope.launch { amountBottomSheetState.show() }
             },
+            onDeleteCategory = onDeleteCategory,
             showInCome,
             toggleShowInCome = { showInCome = !showInCome },
             budget = budget,
             outcomes = outcomes,
             incomes = incomes,
-            categorySums = categorySums
+            categorySums = categorySums,
+            onShowOverlay = { showOverlay = true },
+            toProfileScreen = toProfileScreen,
+            selectedPeriod = selectedPeriod
         )
 
         if (openAddAmountBottomSheet && selectedCategory != null) {
@@ -115,7 +189,8 @@ fun CategoriesScreen(
                     openAddAmountBottomSheet = false
                 },
                 sheetState = amountBottomSheetState,
-                dragHandle = null
+                dragHandle = null,
+                modifier = Modifier.imePadding()
             ) {
                 AddAmountBottomSheetContent(
                     categories = categories,
@@ -153,11 +228,43 @@ fun CategoriesScreen(
                     coroutineScope.launch { bottomSheetState.hide() }
                     openAddCategoryBottomSheet = false
                 },
-                showInCome
+                isIncome = showInCome,
+                doesCategoryExist = { categoryName, callback ->
+                    doesCategoryExist(categoryName) { exists ->
+                        callback(exists)
+                    }
+                }
             )
         }
     }
+    if (showOverlay) {
+        OverlayWithButtons(
+            onDismiss = { showOverlay = false },
+            onPresetRangeClick = { label ->
+                selectedPeriod = label
+                onPresetRangeClick(label)
+            },
+            onShowDataPicker = {
+                showDataPicker = true
+                selectedPeriod = "За период"
+            }
+        )
+    }
+    if (showDataPicker) {
+        DateRangePickerWithButtons(
+            state = state,
+            onSaveClick = {
+                onPresetRangeClick("${state.selectedStartDateMillis!!}+${state.selectedEndDateMillis!!}")
+                showOverlay = false
+                showDataPicker = false
+            },
+            onDismissClick = {
+                showDataPicker = false
+            }
+        )
+    }
 }
+
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -165,14 +272,17 @@ fun CategoriesGrid(
     categories: List<Category>,
     onAddCategoryClick: () -> Unit,
     onCategoryClick: (Category) -> Unit,
+    onDeleteCategory: (String) -> Unit,
     showIncome: Boolean,
     toggleShowInCome: () -> Unit,
     budget: Double,
     outcomes: Double,
     incomes: Double,
-    categorySums: Map<String, Double>
+    categorySums: Map<String, Double>,
+    onShowOverlay: () -> Unit,
+    toProfileScreen: () -> Unit,
+    selectedPeriod: String
 ) {
-    var selectedPeriod by remember { mutableStateOf("Месяц") }
     val incomeItems: List<Category> = categories.filter { it.isIncome } + Category("Добавить", CategoryIconType.Add, true)
     val outcomeItems: List<Category> = categories.filter { !it.isIncome } + Category("Добавить", CategoryIconType.Add, false)
 
@@ -180,13 +290,42 @@ fun CategoriesGrid(
         modifier = Modifier.fillMaxSize()
     ) {
         item {
-            TimePeriodChips(
-                selectedPeriod = selectedPeriod,
-                onPeriodSelected = { period ->
-                    selectedPeriod = period
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { toProfileScreen() },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+                Button(
+                    onClick = { onShowOverlay() },
+                    modifier = Modifier.height(48.dp)
+                ) { Text(selectedPeriod) }
+                IconButton(
+                    onClick = { /* Handle right button click */ },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit category grid",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
         }
         item {
             BudgetCard(
@@ -214,6 +353,9 @@ fun CategoriesGrid(
                                 onCategoryClick(category)
                             }
                         },
+                        onLongClick = {if (category.name != "Добавить") {
+                            onDeleteCategory(category.name)
+                        }},
                         amount = if (category.name == "Добавить") null else categorySums[category.name] ?: 0.0
                     )
                 }
@@ -223,13 +365,123 @@ fun CategoriesGrid(
 }
 
 @Composable
+fun OverlayWithButtons(onDismiss: () -> Unit, onPresetRangeClick: (String) -> Unit, onShowDataPicker: (String) -> Unit) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f))
+                .clickable { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                modifier = Modifier
+                    .height(380.dp)
+                    .width(250.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures {} // Пустой обработчик, чтобы Card не реагировал на клики
+                    }
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Column(verticalArrangement = Arrangement.SpaceEvenly,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxHeight()) {
+                        IconButtonWithLabel(
+                            icon = Icons.Default.Today,
+                            label = "День",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
+                        )
+                        IconButtonWithLabel(
+                            icon = Icons.Default.CalendarMonth,
+                            label = "Месяц",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
+                        )
+                        IconButtonWithLabel(
+                            icon = Icons.Default.AllInclusive,
+                            label = "За всё время",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
+                        )
+
+                    }
+                    Column(verticalArrangement = Arrangement.SpaceEvenly, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxHeight()) {
+                        IconButtonWithLabel(
+                            icon = Icons.Default.DateRange,
+                            label = "Неделя",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
+                        )
+                        IconButtonWithLabel(
+                            icon = Icons.Default.CalendarToday,
+                            label = "Год",
+                            onClick = onPresetRangeClick,
+                            onDismiss = onDismiss
+                        )
+                        IconButtonWithLabel(
+                            icon = Icons.Default.EditCalendar,
+                            label = "За период",
+                            onClick = onShowDataPicker
+                        )
+
+                    }
+                }
+
+            }
+        }
+}
+
+@Composable
+fun IconButtonWithLabel(icon: ImageVector, label: String, onClick: (String) -> Unit, onDismiss: (() -> Unit)? = null) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Card(
+            shape = CircleShape,
+            modifier = Modifier.padding(bottom = 5.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    onClick(label)
+                    onDismiss?.invoke()
+                },
+                modifier = Modifier
+                    .size(70.dp)
+                    .background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.width(100.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 fun CategoryItem(
     category: Category,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     amount: Double? = 0.0
 ) {
     val iconSize = 60.dp
     val itemWidth = 75.dp
+    val showDialog = remember { mutableStateOf(false) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -251,7 +503,16 @@ fun CategoryItem(
         Card(
             modifier = Modifier
                 .size(iconSize)
-                .clickable(onClick = onClick),
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(),
+                    onClick = {
+                        onClick()
+                    },
+                    onLongClick = {
+                        showDialog.value = true
+                    }
+                ),
             elevation = CardDefaults.cardElevation(4.dp),
             shape = CircleShape
         ) {
@@ -283,10 +544,49 @@ fun CategoryItem(
                     .heightIn(max = 40.dp)
             )
         }
+        if (showDialog.value) {
+            ConfirmDelete(
+                onConfirm = {
+                    onLongClick()
+                    showDialog.value = false
+                },
+                onDismiss = {
+                    showDialog.value = false
+                }
+            )
+        }
     }
 }
 
-
+@Composable
+fun ConfirmDelete(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Подтверждение")
+        },
+        text = {
+            Text("Удалить категорию и связанные с ней операции?")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm
+            ) {
+                Text("Подтвердить")
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss
+            ) {
+                Text("Отмена")
+            }
+        }
+    )
+}
 
 @Composable
 fun AddAmountBottomSheetContent(
@@ -298,6 +598,13 @@ fun AddAmountBottomSheetContent(
     var selectedCategory by remember { mutableStateOf(initialCategory) }
     var amountText by remember { mutableStateOf("") }
     var amountError by remember { mutableStateOf(false) }
+
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Column(
         modifier = Modifier
@@ -326,7 +633,9 @@ fun AddAmountBottomSheetContent(
                 amountError = false
             },
             label = { Text("Сумма") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
             isError = amountError,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
@@ -366,6 +675,8 @@ fun AddAmountBottomSheetContent(
 
 
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryDropdown(
     categories: List<Category>,
@@ -374,34 +685,40 @@ fun CategoryDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = selectedCategory.name,
-        onValueChange = {},
-        label = { Text("Категория") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true },
-        readOnly = true,
-        trailingIcon = {
-            Icon(
-                imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                contentDescription = null
-            )
-        }
-    )
-
-    DropdownMenu(
+    ExposedDropdownMenuBox(
         expanded = expanded,
-        onDismissRequest = { expanded = false }
+        onExpandedChange = {
+            expanded = !expanded
+        }
     ) {
-        categories.forEach { category ->
-            DropdownMenuItem(
-                text = { Text(category.name) },
-                onClick = {
-                    onCategorySelected(category)
-                    expanded = false
-                }
-            )
+        OutlinedTextField(
+            value = selectedCategory.name,
+            onValueChange = {},
+            label = { Text("Категория") },
+            readOnly = true,
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(
+                    expanded = expanded
+                )
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category.name) },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }
@@ -412,75 +729,27 @@ fun IconSelectionGrid(
     selectedIcon: CategoryIconType,
     onIconSelected: (CategoryIconType) -> Unit
 ) {
-    val columns = 5
-    val rows = if (icons.size % columns == 0) {
-        icons.size / columns
-    } else {
-        icons.size / columns + 1
-    }
-
-    Column {
-        for (row in 0 until rows) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
+    LazyHorizontalGrid(
+        rows = GridCells.Fixed(5),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    ) {
+        items(icons) { iconType ->
+            IconButton(
+                onClick = { onIconSelected(iconType) }
             ) {
-                for (column in 0 until columns) {
-                    val index = row * columns + column
-                    if (index < icons.size) {
-                        val iconType = icons[index]
-                        IconButton(
-                            onClick = { onIconSelected(iconType) }
-                        ) {
-                            Icon(
-                                imageVector = iconType.icon,
-                                contentDescription = null,
-                                tint = if (iconType == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+                Icon(
+                    imageVector = iconType.icon,
+                    contentDescription = null,
+                    tint = if (iconType == selectedIcon) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
 }
-
-@Composable
-fun TimePeriodChips(
-    selectedPeriod: String,
-    onPeriodSelected: (String) -> Unit,
-    modifier: Modifier
-) {
-    val periods = listOf("День", "Неделя", "Месяц", "Год", "За всё время", "Заданный период")
-    val scrollState = rememberScrollState()
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(scrollState)
-            .padding(8.dp),
-    ) {
-        periods.forEach { period ->
-            val isSelected = selectedPeriod == period
-            AssistChip(
-                onClick = { onPeriodSelected(period) },
-                label = { Text(period) },
-                modifier = Modifier.padding(end = 4.dp),
-                colors = if (isSelected) {
-                    AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        labelColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    AssistChipDefaults.assistChipColors()
-                }
-            )
-        }
-    }
-}
-
 
 @Composable
 fun BudgetCard(modifier: Modifier, onClickBudgetCard: () -> Unit, budget: Double, outcomes: Double, incomes: Double) {
@@ -561,12 +830,16 @@ fun BudgetCard(modifier: Modifier, onClickBudgetCard: () -> Unit, budget: Double
 fun AddCategoryBottomSheetContent(
     onDismissRequest: () -> Unit,
     onConfirm: (Category) -> Unit,
-    isIncome: Boolean
+    isIncome: Boolean,
+    doesCategoryExist: (String, (Boolean) -> Unit) -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
     var selectedIconType by remember { mutableStateOf(CategoryIconType.Home) }
+    var isError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
-    val iconOptions = CategoryIconType.values().toList()
+    val iconOptions = CategoryIconType.entries
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
@@ -581,10 +854,28 @@ fun AddCategoryBottomSheetContent(
 
         OutlinedTextField(
             value = categoryName,
-            onValueChange = { categoryName = it },
+            onValueChange = {
+                categoryName = it
+                isError = false
+            },
             label = { Text("Название категории") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = isError,
+            trailingIcon = {
+                if (isError) {
+                    Icon(Icons.Filled.Error, "error", tint = MaterialTheme.colorScheme.error)
+                }
+            }
         )
+
+        if (isError) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -612,14 +903,53 @@ fun AddCategoryBottomSheetContent(
             }
             TextButton(
                 onClick = {
-                    val newCategory = Category(categoryName, selectedIconType, isIncome)
-                    onConfirm(newCategory)
+                    doesCategoryExist(categoryName) { exists ->
+                        if (exists) {
+                            isError = true
+                            errorMessage = "Категория уже существует"
+                        } else {
+                            val newCategory = Category(categoryName, selectedIconType, isIncome)
+                            onConfirm(newCategory)
+                        }
+                    }
                 },
                 enabled = categoryName.isNotBlank()
             ) {
                 Text("Добавить")
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateRangePickerWithButtons(
+    state: DateRangePickerState,
+    onSaveClick: () -> Unit,
+    onDismissClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(DatePickerDefaults.colors().containerColor)
+                .padding(start = 12.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onDismissClick) {
+                Icon(Icons.Filled.Close, contentDescription = "Localized description")
+            }
+            TextButton(
+                onClick = onSaveClick,
+                enabled = state.selectedEndDateMillis != null
+            ) {
+                Text(text = "Save")
+            }
+        }
+        DateRangePicker(state = state, modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.Start))
     }
 }
 

@@ -11,7 +11,7 @@ import com.example.finance.data.entity.BudgetEntity
 import com.example.finance.data.entity.CategoryEntity
 import com.example.finance.data.entity.OperationEntity
 
-@Database(entities = [OperationEntity::class, CategoryEntity::class, BudgetEntity::class], version = 6, exportSchema = false)
+@Database(entities = [OperationEntity::class, CategoryEntity::class, BudgetEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun operationDao(): OperationDao

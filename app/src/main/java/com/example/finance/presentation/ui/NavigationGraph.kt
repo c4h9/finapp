@@ -37,6 +37,10 @@ fun NavigationGraph(
     val selectedCategories = viewModel.selectedCategories
     val navigateToNextScreen by viewModel.navigateToNextScreen.collectAsState()
 
+    //OperationsScreen
+    val operationsValue = viewModel.operations.collectAsState().value
+    val categoriesValue = viewModel.categories.collectAsState().value
+
     val isFirstLaunch by viewModel.isFirstLaunch.collectAsState()
 
     val startDestination = if (isFirstLaunch == true) {
@@ -70,20 +74,30 @@ fun NavigationGraph(
             CategoriesScreen(
                 categories = categories,
                 addCategory = { newCategory, isIncome -> viewModel.addCategory(newCategory, isIncome) },
-                onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount) },
+                onConfirmAddAmountBottomSheetContent = { category, amount -> viewModel.addOperation(category, amount, "") },
+                onDeleteCategory = { categoryName -> viewModel.deleteCategory(categoryName) },
                 budget = budget,
                 outcomes = outcomes,
                 incomes = incomes,
-                categorySums = viewModel.categorySums.collectAsState().value
+                onPresetRangeClick = { period -> viewModel.setSelectedPeriod(period) },
+                categorySums = viewModel.categorySums.collectAsState().value,
+                toProfileScreen = { navController.navigate("settings") },
+                doesCategoryExist = { categoryName, callback ->
+                    viewModel.doesCategoryExist(categoryName, callback)
+                }
             )
         }
         composable(Screen.Operations.route) {
             OperationsScreen(
+                categoriesValue,
                 operations = viewModel.operations.collectAsState().value,
                 onDeleteOperations = { operationIds ->
                     viewModel.viewModelScope.launch {
                         viewModel.deleteOperationsByIds(operationIds)
                     }
+                },
+                onEditConfirm = { updatedOperation ->
+                    viewModel.updateOperation(updatedOperation)
                 }
             )
         }
@@ -97,7 +111,6 @@ fun NavigationGraph(
         }
         composable(Screen.Permission.route) {
             PermissionScreen(
-                navController = navController,
                 onDontShowAgainChanged = { dontShowAgain ->
                     viewModel.viewModelScope.launch {
                         viewModel.setDontShowPermissionScreen(dontShowAgain)

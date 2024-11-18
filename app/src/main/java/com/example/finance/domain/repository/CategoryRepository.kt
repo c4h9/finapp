@@ -6,4 +6,6 @@ import kotlinx.coroutines.flow.Flow
 interface CategoryRepository {
     suspend fun insertCategory(category: CategoryEntity): Long
     fun getAllCategories(): Flow<List<CategoryEntity>>
+    suspend fun deleteCategory(categoryName: String)
+    suspend fun doesCategoryExist(categoryName: String): Boolean
 }
